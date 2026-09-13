@@ -1,0 +1,2677 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Ada: Hayatta Kalma 3D (PC)</title>
+<style>
+  *{-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Segoe UI',Arial,sans-serif;
+    height:100%;width:100%;position:fixed;touch-action:none;overscroll-behavior:none;}
+  canvas{display:block;touch-action:none;}
+
+  #crosshair{
+    position:fixed;top:50%;left:50%;width:6px;height:6px;
+    margin:-3px 0 0 -3px;border-radius:50%;background:rgba(255,255,255,0.85);
+    box-shadow:0 0 3px rgba(0,0,0,0.8); pointer-events:none; z-index:20;
+  }
+
+  #hud{position:fixed;top:max(10px, env(safe-area-inset-top));left:max(10px, env(safe-area-inset-left));z-index:20;user-select:none;pointer-events:none;}
+  .bar-row{display:flex;align-items:center;margin-bottom:clamp(3px,0.8vh,6px);}
+  .bar-label{width:clamp(18px,4vw,26px);font-size:clamp(13px,3vw,18px);text-align:center;}
+  .bar-bg{width:clamp(100px,22vw,160px);height:clamp(10px,2.2vw,14px);background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.4);border-radius:7px;overflow:hidden;margin-left:6px;}
+  .bar-fill{height:100%;transition:width 0.2s;}
+  #healthFill{background:linear-gradient(90deg,#ff4d4d,#c40000);}
+  #hungerFill{background:linear-gradient(90deg,#ffb347,#e07b00);}
+  #thirstFill{background:linear-gradient(90deg,#4da6ff,#0066cc);}
+
+  #inventory{position:fixed;top:max(10px, env(safe-area-inset-top));right:max(10px, env(safe-area-inset-right));z-index:20;pointer-events:none;user-select:none;
+    background:rgba(0,0,0,0.45);border-radius:10px;padding:clamp(6px,1.2vw,10px) clamp(8px,1.6vw,14px);color:#fff;font-size:clamp(12px,2.6vw,15px);line-height:1.6;}
+
+  #dayIndicator{position:fixed;top:max(10px, env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:20;
+    color:#fff;background:rgba(0,0,0,0.45);padding:5px 14px;border-radius:20px;font-size:clamp(12px,2.6vw,15px);pointer-events:none;user-select:none;white-space:nowrap;}
+
+  #topRightBtns{position:fixed;top:max(10px, env(safe-area-inset-top));right:max(10px, env(safe-area-inset-right));
+    z-index:25;display:flex;flex-direction:column;gap:8px;}
+  .cornerBtn{width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;
+    border:1px solid rgba(255,255,255,0.4);font-size:16px;display:flex;align-items:center;justify-content:center;}
+  #pauseBtn{display:flex;}
+  #hammerBtn{display:flex;}
+  #hammerBtn.active{background:rgba(61,220,97,0.6);border-color:#3ddc61;}
+  #settingsBtn{display:flex;}
+
+  #prompt{position:fixed;bottom:22%;left:50%;transform:translateX(-50%);z-index:20;
+    color:#fff;background:rgba(0,0,0,0.6);padding:7px 14px;border-radius:8px;font-size:clamp(12px,2.6vw,15px);
+    pointer-events:none;user-select:none;display:none;text-align:center;white-space:nowrap;}
+
+  #msgLog{position:fixed;bottom:12%;left:50%;transform:translateX(-50%);z-index:20;
+    color:#ffe58a;font-size:clamp(11px,2.4vw,14px);pointer-events:none;user-select:none;text-align:center;text-shadow:0 0 4px #000;width:90%;}
+
+  #buildInfo{position:fixed;bottom:30%;left:50%;transform:translateX(-50%);z-index:21;
+    color:#fff;background:rgba(0,0,0,0.55);padding:6px 14px;border-radius:8px;font-size:clamp(12px,2.6vw,14px);
+    pointer-events:none;user-select:none;display:none;text-align:center;white-space:nowrap;}
+
+  #buildButtonsMobile{position:fixed;bottom:max(150px, 26vh);left:50%;transform:translateX(-50%);z-index:22;
+    display:none;gap:6px;flex-wrap:wrap;justify-content:center;max-width:94vw;}
+  .buildBtn{
+    min-width:44px;height:40px;padding:0 10px;border-radius:20px;
+    background:rgba(0,0,0,0.55);border:2px solid rgba(255,255,255,0.4);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:15px;user-select:none;gap:4px;
+  }
+  .buildBtn.selected{background:rgba(61,220,97,0.55);border-color:#3ddc61;}
+  .buildBtn:active{background:rgba(255,255,255,0.3);}
+
+  /* ---- AYARLAR PANELİ ---- */
+  #settingsPanel{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0.85);color:#fff;
+    display:none;align-items:center;justify-content:center;padding:20px;}
+  .settingsBox{background:rgba(30,30,30,0.9);border-radius:14px;padding:22px 26px;width:100%;max-width:360px;}
+  .settingsBox h2{margin:0 0 16px 0;font-size:20px;color:#8fffa0;text-align:center;}
+  .settRow{margin-bottom:18px;}
+  .settRow label{display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:6px;}
+  .settRow input[type=range]{width:100%;accent-color:#3ddc61;}
+  .toggleSwitch{width:46px;height:26px;border-radius:14px;background:rgba(255,255,255,0.25);
+    position:relative;cursor:pointer;border:1px solid rgba(255,255,255,0.3);flex-shrink:0;}
+  .toggleSwitch .knob{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+    background:#fff;transition:left 0.15s;}
+  .toggleSwitch.on{background:rgba(61,220,97,0.7);}
+  .toggleSwitch.on .knob{left:22px;}
+  .smallbtn{background:transparent;border:1px solid rgba(255,255,255,0.4);color:#ccc;font-size:13px;
+    padding:8px 16px;border-radius:8px;margin-top:4px;}
+
+  #startScreen,#gameOverScreen,#pauseScreen{
+    position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0.9);color:#fff;overflow-y:auto;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;
+  }
+  #gameOverScreen,#pauseScreen{display:none;}
+  h1{font-size:clamp(24px,6vw,34px);margin-bottom:6px;color:#8fffa0;text-shadow:0 0 10px #2a2;}
+  .subtitle{color:#aaa;margin-bottom:16px;font-size:clamp(13px,3vw,16px);}
+  .instructions{background:rgba(255,255,255,0.06);border-radius:10px;padding:14px 20px;margin-bottom:20px;text-align:left;font-size:clamp(12px,2.8vw,15px);line-height:1.85;max-width:420px;width:90%;}
+  .instructions b{color:#8fffa0;}
+  button.bigbtn{
+    background:linear-gradient(180deg,#3ddc61,#20a040);border:none;color:#fff;font-size:clamp(15px,3.5vw,18px);
+    padding:14px 34px;border-radius:10px;cursor:pointer;box-shadow:0 4px 0 #157a2e;
+  }
+  button.bigbtn:active{box-shadow:0 1px 0 #157a2e;transform:translateY(3px);}
+  #goStats{margin:14px 0 22px 0;font-size:16px;color:#ffcf6e;}
+
+  /* ---- MOBİL DOKUNMATİK KONTROLLER ---- */
+  #touchLayer{position:fixed;inset:0;z-index:15;display:none;}
+  .touchZone{position:absolute;top:0;bottom:0;}
+  #lookZone{right:0;width:60%;height:100%;}
+  #moveZoneArea{left:0;width:40%;height:100%;}
+
+  #joystickOuter{
+    position:fixed;left:max(26px, env(safe-area-inset-left));bottom:max(26px, env(safe-area-inset-bottom));
+    width:clamp(90px,22vw,120px);height:clamp(90px,22vw,120px);border-radius:50%;
+    background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.35);z-index:22;display:none;
+  }
+  #joystickInner{
+    position:absolute;left:50%;top:50%;width:44%;height:44%;border-radius:50%;
+    background:rgba(255,255,255,0.55);transform:translate(-50%,-50%);pointer-events:none;
+  }
+
+  #btnCluster{position:fixed;right:max(14px, env(safe-area-inset-right));bottom:max(18px, env(safe-area-inset-bottom));z-index:22;display:none;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .actBtn{
+    width:clamp(46px,10vw,58px);height:clamp(46px,10vw,58px);border-radius:50%;
+    background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.4);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:clamp(17px,4vw,22px);user-select:none;
+  }
+  .actBtn:active{background:rgba(255,255,255,0.35);}
+  #jumpBtn{grid-column:3; grid-row:1/3; width:clamp(64px,13vw,78px); height:clamp(64px,13vw,78px);}
+  #runBtn.active{background:rgba(61,220,97,0.55);border-color:#3ddc61;}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="crosshair"></div>
+
+<div id="hud">
+  <div class="bar-row"><div class="bar-label">❤️</div><div class="bar-bg"><div class="bar-fill" id="healthFill" style="width:100%"></div></div></div>
+  <div class="bar-row"><div class="bar-label">🍗</div><div class="bar-bg"><div class="bar-fill" id="hungerFill" style="width:100%"></div></div></div>
+  <div class="bar-row"><div class="bar-label">💧</div><div class="bar-bg"><div class="bar-fill" id="thirstFill" style="width:100%"></div></div></div>
+  <div class="bar-row"><div class="bar-label">🏃</div><div class="bar-bg"><div class="bar-fill" id="staminaFill" style="width:100%;background:linear-gradient(90deg,#8be04a,#4a9e1f);"></div></div></div>
+</div>
+
+<div id="inventory">
+  🪵 <span id="invWood">0</span> &nbsp; 🪨 <span id="invStone">0</span> &nbsp; 🍓 <span id="invBerry">0</span> &nbsp; 🍖 <span id="invMeat">0</span>
+  <span id="toolIcons" style="margin-left:8px;">
+    <span id="axeIcon" style="opacity:0.25;">🪓</span>
+    <span id="pickaxeIcon" style="opacity:0.25;">⛏️</span>
+  </span>
+</div>
+
+<div id="dayIndicator">☀️ Gün <span id="dayNum">1</span></div>
+<div id="bossBar" style="display:none;position:fixed;top:52px;left:50%;transform:translateX(-50%);z-index:20;background:rgba(80,10,0,0.6);padding:6px 16px;border-radius:20px;color:#ffd9c4;font-size:13px;pointer-events:none;user-select:none;white-space:nowrap;">
+  🌋 <span id="bossHealthText">8/8</span>
+</div>
+<div id="topRightBtns">
+  <button id="pauseBtn" class="cornerBtn">⏸</button>
+  <button id="hammerBtn" class="cornerBtn">🔨</button>
+  <button id="settingsBtn" class="cornerBtn">⚙️</button>
+  <button id="waveBtn" class="cornerBtn" style="display:none;">👋</button>
+  <button id="danceBtn" class="cornerBtn" style="display:none;">💃</button>
+</div>
+<div id="prompt"></div>
+<div id="producerBanner" style="display:none;position:fixed;transform:translate(-50%,-100%);z-index:21;
+  background:rgba(20,10,30,0.75);border:2px solid #ffcf6e;border-radius:14px;padding:10px 18px;
+  color:#fff;font-size:14px;text-align:center;pointer-events:none;user-select:none;white-space:nowrap;
+  box-shadow:0 0 18px rgba(255,207,110,0.5);">
+  🎬 <b>Yapımcıdan mesaj:</b><br>Bu oyunu senin için yaptım — nasıldı? 😊
+</div>
+<div id="buildInfo"></div>
+<div id="msgLog"></div>
+
+<!-- MOBİL KONTROLLER -->
+<div id="touchLayer">
+  <div class="touchZone" id="moveZoneArea"></div>
+  <div class="touchZone" id="lookZone"></div>
+</div>
+<div id="joystickOuter"><div id="joystickInner"></div></div>
+<div id="btnCluster">
+  <div class="actBtn" id="btnFire" title="Kamp ateşi">🔥</div>
+  <div class="actBtn" id="btnInteract" title="Etkileşim">✋</div>
+  <div class="actBtn" id="btnAttack" title="Saldır">👊</div>
+  <div class="actBtn" id="btnBerry" title="Meyve ye">🍓</div>
+  <div class="actBtn" id="btnMeat" title="Et ye">🍖</div>
+  <div class="actBtn" id="jumpBtn" title="Zıpla">⬆</div>
+</div>
+<div class="actBtn" id="runBtn" style="position:fixed;display:none;z-index:22;width:50px;height:50px;">🏃</div>
+
+<div id="buildButtonsMobile">
+  <div class="buildBtn" id="bbWall" data-type="wall">🧱 Duvar</div>
+  <div class="buildBtn" id="bbDoor" data-type="door">🚪 Kapı</div>
+  <div class="buildBtn" id="bbRoof" data-type="roof">🏠 Çatı</div>
+  <div class="buildBtn" id="bbRotate">🔁 Döndür</div>
+  <div class="buildBtn" id="bbPlace">✅ Yerleştir</div>
+  <div class="buildBtn" id="bbDemolish">🗑️ Kaldır</div>
+  <div class="buildBtn" id="bbExit">✖ Çık</div>
+</div>
+
+<div id="startScreen">
+  <h1>🏝️ Ada: Hayatta Kalma 3D</h1>
+  <div class="subtitle">Issız adada hayatta kalmaya çalış</div>
+
+  <div id="modeSelect">
+    <div style="margin-bottom:14px;color:#ccc;">Nasıl oynamak istersin?</div>
+    <button class="bigbtn" id="soloModeBtn">🧍 Tek Oyunculu</button><br><br>
+    <button class="bigbtn" id="mpModeBtn" style="background:linear-gradient(180deg,#4aa3dc,#2072a8);box-shadow:0 4px 0 #144e73;">👥 Çok Oyunculu</button>
+  </div>
+
+  <div id="mpPanel" style="display:none;">
+    <div class="instructions" style="text-align:left;max-width:380px;font-size:13px;">
+      <b>Not:</b> Çok oyunculu modda birbirinizi haritada canlı görüp hareket edebilir, el sallayabilirsiniz. Ama her oyuncunun ağaç/taş/kurt/boss gibi dünya durumu <b>kendi tarafında ayrı</b> ilerler — ortak envanter ya da ortak inşa yoktur, sadece aynı adada birlikte dolaşırsınız.
+    </div>
+    <input id="nickInput" type="text" placeholder="Takma adın (opsiyonel)" maxlength="16"
+      style="width:80%;max-width:300px;padding:10px;border-radius:8px;border:none;margin:10px 0;font-size:15px;text-align:center;">
+    <br>
+    <button class="smallbtn" id="hostBtn">🏠 Oda Kur</button>
+    <button class="smallbtn" id="joinShowBtn">🔑 Odaya Katıl</button>
+    <div id="hostPanel" style="display:none;margin-top:14px;">
+      <div style="color:#ccc;font-size:13px;">Oda kodun:</div>
+      <div id="roomCodeDisplay" style="font-size:19px;font-weight:bold;color:#8fffa0;margin:8px 0;letter-spacing:0.5px;word-break:break-all;max-width:340px;">bağlanıyor...</div>
+      <div style="font-size:12px;color:#999;">Bu kodu arkadaşına gönder, "Odaya Katıl" ile girsin.</div>
+    </div>
+    <div id="joinPanel" style="display:none;margin-top:14px;">
+      <input id="joinCodeInput" type="text" placeholder="Oda kodunu yapıştır" style="width:80%;max-width:300px;padding:10px;border-radius:8px;border:none;font-size:14px;text-align:center;">
+      <br>
+      <button class="smallbtn" id="joinConnectBtn" style="margin-top:8px;">Bağlan</button>
+    </div>
+    <div id="mpStatus" style="margin-top:12px;font-size:13px;color:#ffcf6e;min-height:18px;"></div>
+    <button class="smallbtn" id="mpRetryBtn" style="display:none;margin-top:6px;">🔄 Tekrar Dene</button>
+    <br>
+    <button class="bigbtn" id="mpStartBtn" style="display:none;margin-top:6px;">▶ Oyuna Başla</button><br>
+    <button class="smallbtn" id="mpBackBtn" style="margin-top:8px;">◀ Geri</button>
+  </div>
+
+  <div class="instructions" id="instructionsBox" style="display:none;">
+    <b>WASD</b> — Hareket &nbsp; | &nbsp; <b>Shift</b> — Koş<br>
+    <b>Fare</b> — Etrafa bak &nbsp; | &nbsp; <b>Boşluk</b> — Zıpla<br>
+    <b>E</b> — Etkileşim (topla / su iç / kapı aç-kapa)<br>
+    <b>F</b> — Meyve ye &nbsp; | &nbsp; <b>G</b> — Et ye<br>
+    <b>C</b> — Kamp ateşi kur (5 odun)<br>
+    <b>B</b> — Yapı modu &nbsp; | &nbsp; <b>Q</b> — Parça değiştir &nbsp; | &nbsp; <b>R</b> — Döndür<br>
+    <b>Sol Tık</b> — Saldır / Yapı modunda yerleştir &nbsp; | &nbsp; <b>X</b> — Kaldır<br>
+    <b>V</b> — El salla (çok oyunculuda) &nbsp; | &nbsp; <b>T</b> — Halaya katıl/ayrıl (sahnenin yanında) &nbsp; | &nbsp; <b>ESC</b> — Duraklat<br><br>
+    Açlığını ve susuzluğunu yönet, geceleri kurtlardan sakın; duvar, kapı ve çatıyla kendi evini inşa ederek korun!<br>
+    🌱 Kestiğin ağaçların yerine fidan biter ve zamanla büyür &nbsp;|&nbsp; 🪨 Kırdığın kayalar da zamanla toprağın içinden yeniden büyür &nbsp;|&nbsp; ⛏️ Adadaki madenlerden sınırsız taş çıkarabilirsin &nbsp;|&nbsp; 🍓 Çalılar bir süre sonra yeniden meyve verir.<br>
+    🏛️ Ada çok daha büyüdü — kalıntıları keşfet, 🗝️ gizli sandıkları bul (bazılarında balta 🪓 / kazma ⛏️ var) &nbsp;|&nbsp; 🚢 Her 5 günde bir kıyıdaki iskeleye gemi gelir, ticaret yapabilirsin &nbsp;|&nbsp; Kazman varsa yerdeki çatlak noktaları kazıp ekstra taş çıkarabilirsin.<br>
+    ⛰️ Ada artık dümdüz değil — tepeler ve bir dağ var, yürüyerek tırmanabilirsin.<br>
+    🐴 Adada vahşi atlar dolaşıyor — bir ata 6 kez meyve verip evcilleştir, sonra E ile binip çok daha hızlı seyahat et (E ile de inersin).<br>
+    🌋 Adada büyük, gerçek bir krater/mağara var, içinde lav dolu — yaklaşınca canavar çıkar. Saldırırken (yukarıdayken) hem yakın lav sıçratır hem uzaktan ateş topu fırlatır, uzak dur; yorulup aşağı inince Sol Tık ile vur!
+  </div>
+  <button class="bigbtn" id="startBtn" style="display:none;">▶ Oyuna Başla</button><br>
+  <button class="smallbtn" id="settingsBtnStart" style="display:none;">⚙️ Ayarlar</button>
+</div>
+
+<div id="pauseScreen">
+  <h1>⏸️ Duraklatıldı</h1>
+  <button class="bigbtn" id="resumeBtn">▶ Devam Et</button><br>
+  <button class="smallbtn" id="settingsBtnPause">⚙️ Ayarlar</button>
+</div>
+
+<div id="gameOverScreen">
+  <h1 style="color:#ff5959;">☠️ Öldün</h1>
+  <div id="goStats"></div>
+  <button class="bigbtn" id="restartBtn">🔄 Tekrar Dene</button>
+</div>
+
+<div id="settingsPanel">
+  <div class="settingsBox">
+    <h2>⚙️ Ayarlar</h2>
+    <div class="settRow">
+      <label>🔊 Ses <span class="toggleSwitch" id="soundToggle"><span class="knob"></span></span></label>
+    </div>
+    <div class="settRow">
+      <label>Ses Seviyesi <span id="volumeVal">60%</span></label>
+      <input type="range" id="volumeSlider" min="0" max="100" value="60">
+    </div>
+    <div class="settRow">
+      <label>Kamera Hassasiyeti <span id="sensVal">100%</span></label>
+      <input type="range" id="sensSlider" min="40" max="220" value="100">
+    </div>
+    <button class="bigbtn" id="settingsCloseBtn" style="width:100%;">Kapat</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+const isMobile = false; // PC sürümü: dokunmatik kontroller kapalı, her zaman masaüstü kalite/kontrol yolu kullanılır
+
+// ---------- AYARLAR (ses / hassasiyet) ----------
+let soundEnabled = true;
+let sfxVolume = 0.6;
+let cameraSensitivity = 1.0;
+try{
+  const saved = JSON.parse(localStorage.getItem('adaHayattaKalmaSettings')||'null');
+  if(saved){
+    if(typeof saved.soundEnabled==='boolean') soundEnabled = saved.soundEnabled;
+    if(typeof saved.sfxVolume==='number') sfxVolume = saved.sfxVolume;
+    if(typeof saved.cameraSensitivity==='number') cameraSensitivity = saved.cameraSensitivity;
+  }
+}catch(e){}
+function saveSettings(){
+  try{
+    localStorage.setItem('adaHayattaKalmaSettings', JSON.stringify({soundEnabled, sfxVolume, cameraSensitivity}));
+  }catch(e){}
+}
+
+// ---------- SES MOTORU (basit sentezlenmiş efektler, dış dosya gerektirmez) ----------
+let audioCtx = null, masterGain = null;
+function ensureAudio(){
+  if(audioCtx) return;
+  try{
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = soundEnabled ? sfxVolume : 0;
+    masterGain.connect(audioCtx.destination);
+  }catch(e){ audioCtx=null; }
+}
+function applyVolume(){
+  if(masterGain) masterGain.gain.value = soundEnabled ? sfxVolume : 0;
+}
+function playTone(freq, duration, type, vol, freqEnd){
+  if(!soundEnabled || !audioCtx) return;
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type||'sine';
+  const t0 = audioCtx.currentTime;
+  osc.frequency.setValueAtTime(freq, t0);
+  if(freqEnd) osc.frequency.exponentialRampToValueAtTime(Math.max(freqEnd,1), t0+duration);
+  g.gain.setValueAtTime(Math.max(vol||0.4,0.0001), t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0+duration);
+  osc.connect(g); g.connect(masterGain);
+  osc.start(t0);
+  osc.stop(t0+duration+0.02);
+}
+const sfx = {
+  chop: ()=>playTone(220,0.12,'square',0.5,140),
+  mine: ()=>playTone(150,0.1,'square',0.5,90),
+  pickup: ()=>playTone(660,0.12,'triangle',0.35,880),
+  drink: ()=>playTone(500,0.15,'sine',0.3,400),
+  eat: ()=>playTone(420,0.12,'triangle',0.35,300),
+  build: ()=>playTone(300,0.18,'square',0.4,220),
+  demolish: ()=>playTone(220,0.2,'sawtooth',0.35,100),
+  door: ()=>playTone(350,0.1,'square',0.3,300),
+  wolfHit: ()=>playTone(180,0.1,'sawtooth',0.5,80),
+  wolfDeath: ()=>playTone(120,0.35,'sawtooth',0.45,40),
+  playerHurt: ()=>playTone(140,0.25,'square',0.55,60),
+  dawn: ()=>playTone(523,0.4,'sine',0.3,660),
+  dusk: ()=>playTone(300,0.5,'sine',0.28,180),
+  heartbeat: ()=>playTone(90,0.15,'sine',0.4,55)
+};
+
+// ---------- HALAY MÜZİĞİ (basit döngüsel motif, dış dosya gerektirmez) ----------
+const halayNotes = [392,440,494,440,392,349,392,494];
+let halayStep = 0, halayTimer = null;
+function startHalayMusic(){
+  if(halayTimer) return;
+  halayStep = 0;
+  halayTimer = setInterval(()=>{
+    if(!soundEnabled || !audioCtx) return;
+    const note = halayNotes[halayStep % halayNotes.length];
+    playTone(note, 0.22, 'triangle', 0.22);
+    if(halayStep % 2 === 0) playTone(note/2, 0.16, 'square', 0.13);
+    halayStep++;
+  }, 260);
+}
+function stopHalayMusic(){
+  if(halayTimer){ clearInterval(halayTimer); halayTimer=null; }
+}
+
+// ---------- TEMEL KURULUM ----------
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2.5));
+renderer.setSize(innerWidth, innerHeight);
+// Optimizasyon: mobilde gölge haritası tamamen kapalı -> ekstra render geçişi yok, büyük performans kazancı.
+renderer.shadowMap.enabled = !isMobile;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x88bbdd, 0.0045);
+
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 900);
+
+function doResize(){
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+}
+window.addEventListener('resize', doResize);
+window.addEventListener('orientationchange', ()=>{ setTimeout(doResize, 300); });
+
+// ---------- IŞIKLAR ----------
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+sun.castShadow = !isMobile;
+sun.shadow.mapSize.set(1536,1536);
+sun.shadow.camera.left=-60; sun.shadow.camera.right=60;
+sun.shadow.camera.top=60; sun.shadow.camera.bottom=-60;
+sun.shadow.camera.far=200;
+scene.add(sun);
+scene.add(sun.target);
+
+// ---------- ADA ----------
+const ISLAND_R = 165;
+
+// Arazi yükseklik fonksiyonu — birkaç sinüs dalgası + bir büyük "dağ" + bir küçük tepe
+// üst üste bindiriliyor, kıyıya yaklaştıkça (fade) düzleşiyor ki sahil/deniz hep düz kalsın.
+// Hem arazi örgüsünü şekillendirmek hem de oyuncu/nesne/kurt konumlandırmak için kullanılıyor.
+const MOUNTAIN_POS = {x: ISLAND_R*0.30, z: -ISLAND_R*0.22};
+const HILL_POS = {x: -ISLAND_R*0.38, z: ISLAND_R*0.32};
+const CAVE_XZ = {x: -ISLAND_R*0.15, z: -ISLAND_R*0.55};
+const CAVE_CRATER_R = 12;
+function terrainHeight(x, z){
+  const d = Math.hypot(x, z);
+  let h = 0;
+  h += Math.sin(x*0.018)*Math.cos(z*0.022)*3.0;
+  h += Math.sin(x*0.045+1.7)*Math.cos(z*0.038-0.9)*1.5;
+  h += Math.sin((x*0.7+z*0.3)*0.012)*2.2;
+  const md = Math.hypot(x-MOUNTAIN_POS.x, z-MOUNTAIN_POS.z);
+  h += Math.max(0, 19 - md*0.34);
+  const hd = Math.hypot(x-HILL_POS.x, z-HILL_POS.z);
+  h += Math.max(0, 9 - hd*0.3);
+  // Dalgalı zemin bazı iç bölgelerde negatife düşebiliyordu; bu da deniz düzleminin
+  // (y=-0.6) oradan görünüp sahte bir "göl" gibi durmasına yol açıyordu — içilemeyen,
+  // sadece görsel bir hataydı. Taban, kıyıya (fade) uygulanmadan ÖNCE asla negatife
+  // inmeyecek şekilde sınırlandırılıyor; böylece kıyı yine düzgünce 0'a iniyor.
+  h = Math.max(h, 0.4);
+  const fadeStart = ISLAND_R*0.62, fadeEnd = ISLAND_R-8;
+  if(d>fadeStart){
+    const fade = Math.max(0, 1-(d-fadeStart)/(fadeEnd-fadeStart));
+    h *= fade;
+  }
+  // Büyük lav mağarası çukuru — düz zeminin içine gerçek bir krater oyuyor. Önceki sürümde
+  // çukurun tabanı dalgalı arazi gürültüsünden tam arınmıyordu, bu da bazı noktalarda çimin
+  // lav diskinin üstüne taşıp onu kısmen kapatmasına yol açıyordu. Şimdi merkezdeki geniş
+  // bir alan (lav gölünün tamamını kapsayacak kadar) TAMAMEN düz sabit bir tabana oturtuluyor,
+  // sadece kraterin en dış halkasında doğal araziye doğru yumuşakça yükseliyor.
+  const cd = Math.hypot(x-CAVE_XZ.x, z-CAVE_XZ.z);
+  if(cd < CAVE_CRATER_R){
+    const FLOOR_H = -0.3;
+    const flatR = CAVE_CRATER_R*0.7;
+    if(cd < flatR){
+      h = FLOOR_H;
+    } else {
+      const wt = (cd-flatR)/(CAVE_CRATER_R-flatR);
+      const blend = wt*wt*(3-2*wt);
+      h = FLOOR_H + blend*(h-FLOOR_H);
+    }
+  }
+  return h;
+}
+
+// Düz THREE.CircleGeometry sadece tek bir üçgen yelpazesi (merkezden kenara) olduğu için
+// tepe/dağ oyulamıyor — bu yüzden merkezden kenara halkalar halinde gerçek bir ızgara
+// (grid) elle inşa ediliyor, sonra her tepe noktası terrainHeight'e göre yükseltiliyor.
+function buildIslandGeometry(radius, radialSegs, angularSegs){
+  const positions = [];
+  const indices = [];
+  positions.push(0, terrainHeight(0,0), 0);
+  for(let r=1; r<=radialSegs; r++){
+    const rad = radius*(r/radialSegs);
+    for(let a=0; a<angularSegs; a++){
+      const theta = (a/angularSegs)*Math.PI*2;
+      const wx = Math.cos(theta)*rad, wz = Math.sin(theta)*rad;
+      positions.push(wx, terrainHeight(wx,wz), wz);
+    }
+  }
+  for(let a=0;a<angularSegs;a++){
+    const a2=(a+1)%angularSegs;
+    indices.push(0, 1+a2, 1+a);
+  }
+  for(let r=1;r<radialSegs;r++){
+    const ringStart = 1+(r-1)*angularSegs;
+    const nextStart = 1+r*angularSegs;
+    for(let a=0;a<angularSegs;a++){
+      const a2=(a+1)%angularSegs;
+      const p1=ringStart+a, p2=ringStart+a2, p3=nextStart+a, p4=nextStart+a2;
+      indices.push(p1,p4,p3);
+      indices.push(p1,p2,p4);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setIndex(indices);
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+  geo.computeVertexNormals();
+  return geo;
+}
+const groundGeo = buildIslandGeometry(ISLAND_R, isMobile?44:60, isMobile?52:72);
+const groundMat = new THREE.MeshStandardMaterial({color:0x4c9a4c});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.receiveShadow = true;
+scene.add(ground);
+
+const beachGeo = new THREE.RingGeometry(ISLAND_R-6, ISLAND_R+2, isMobile?56:84);
+const beachMat = new THREE.MeshStandardMaterial({color:0xe0c87a, side:THREE.DoubleSide});
+const beach = new THREE.Mesh(beachGeo, beachMat);
+beach.rotation.x = -Math.PI/2;
+beach.position.y = 0.02;
+scene.add(beach);
+
+const waterGeo = new THREE.CircleGeometry(900, isMobile?32:48);
+const waterMat = new THREE.MeshStandardMaterial({color:0x1f6fb2, transparent:true, opacity:0.85});
+const water = new THREE.Mesh(waterGeo, waterMat);
+water.rotation.x = -Math.PI/2;
+water.position.y = -0.6;
+scene.add(water);
+
+// ---------- YARDIMCI ----------
+function rand(a,b){return a+Math.random()*(b-a);}
+function randPointOnIsland(minR, maxR){
+  const ang = Math.random()*Math.PI*2;
+  const r = rand(minR, maxR);
+  return new THREE.Vector3(Math.cos(ang)*r, 0, Math.sin(ang)*r);
+}
+
+const obstacles = [];
+// Kaynak tükenmesin diye: bir engel yok edildiğinde diziden gerçekten çıkarılır
+// (sadece "dead" bayrağı bırakmak, saatler süren oyunlarda diziyi sonsuza kadar
+// büyütüp performansı düşürürdü). Bu fonksiyon tüm kalıcı-kaldırma işlemlerinde kullanılır.
+function removeObstacle(rec){
+  scene.remove(rec.mesh);
+  const idx = obstacles.indexOf(rec);
+  if(idx>=0) obstacles.splice(idx,1);
+}
+
+// Optimizasyon: paylaşılan (shared) geometry/material - her ağaç/kaya için yeni obje oluşturmak yerine
+// tek geometri+materyal referansı tüm örnekler arasında paylaşılıyor. Bellek ve GPU state-change maliyeti düşer.
+const TRUNK_BASE_H = 2.6;
+const treeTrunkGeo = new THREE.CylinderGeometry(0.28,0.32,TRUNK_BASE_H,7);
+const treeLeavesGeo = new THREE.ConeGeometry(1.6,3.2,7);
+const treeTrunkMat = new THREE.MeshStandardMaterial({color:0x6b4423});
+const treeLeavesMat = new THREE.MeshStandardMaterial({color:0x2f7a2f});
+
+function makeTree(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const g = new THREE.Group();
+  const scaleH = rand(0.78,1.28);
+  const trunkH = TRUNK_BASE_H*scaleH;
+  const trunk = new THREE.Mesh(treeTrunkGeo, treeTrunkMat);
+  trunk.scale.y = scaleH;
+  trunk.position.y = trunkH/2;
+  trunk.castShadow = !isMobile;
+  g.add(trunk);
+  const leaves = new THREE.Mesh(treeLeavesGeo, treeLeavesMat);
+  leaves.position.y = trunkH + 1.4;
+  leaves.castShadow = !isMobile;
+  g.add(leaves);
+  g.position.copy(pos);
+  scene.add(g);
+  const rec = {mesh:g, pos:pos.clone(), radius:0.8, type:'tree', health:3, wood:4};
+  obstacles.push(rec);
+  return rec;
+}
+
+// ---------- FİDAN / AĞAÇ BÜYÜME SİSTEMİ ----------
+// Bir ağaç tamamen kesilince o noktaya küçük bir fidan dikiliyor; fidan zamanla
+// (TREE_GROW_TIME saniyede) büyüyüp tam bir ağaca dönüşüyor ve tekrar kesilebilir hale
+// geliyor. Böylece odun kaynağı kalıcı olarak tükenmiyor. Fidanın kendi çarpışması yok
+// (obstacles dizisine eklenmiyor), bu yüzden ekstra bir maliyeti neredeyse yok.
+const growingTrees = [];
+const TREE_GROW_TIME = 90; // saniye — fidandan tam ağaca
+function spawnSapling(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(treeTrunkGeo, treeTrunkMat);
+  trunk.position.y = TRUNK_BASE_H/2;
+  g.add(trunk);
+  const leaves = new THREE.Mesh(treeLeavesGeo, treeLeavesMat);
+  leaves.position.y = TRUNK_BASE_H + 1.4;
+  g.add(leaves);
+  g.position.copy(pos);
+  g.scale.setScalar(0.16);
+  scene.add(g);
+  growingTrees.push({mesh:g, pos:pos.clone(), timer:0});
+}
+function updateGrowingTrees(dt){
+  for(let i=growingTrees.length-1; i>=0; i--){
+    const s = growingTrees[i];
+    s.timer += dt;
+    const t = Math.min(1, s.timer/TREE_GROW_TIME);
+    s.mesh.scale.setScalar(0.16 + 0.84*t);
+    if(t>=1){
+      scene.remove(s.mesh);
+      growingTrees.splice(i,1);
+      trees.push(makeTree(s.pos));
+    }
+  }
+}
+
+const rockGeo = new THREE.IcosahedronGeometry(1,0);
+const rockMat = new THREE.MeshStandardMaterial({color:0x8a8a8a, flatShading:true});
+function makeRock(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const scale = rand(0.6,1.3);
+  const rock = new THREE.Mesh(rockGeo, rockMat);
+  rock.scale.setScalar(scale);
+  rock.position.copy(pos);
+  rock.position.y = pos.y + scale*0.4;
+  rock.castShadow = !isMobile;
+  scene.add(rock);
+  const rec = {mesh:rock, pos:pos.clone(), radius:scale*0.9, type:'rock', health:2, stone:3};
+  obstacles.push(rec);
+  return rec;
+}
+
+// ---------- KAYA YENİDEN OLUŞMA SİSTEMİ ----------
+// Bir kaya tamamen kırılınca yerine toprağın içinden çıkan küçük bir taş tomurcuğu
+// bırakılıyor; bu tomurcuk ROCK_GROW_TIME saniyede büyüyüp tekrar kırılabilir tam bir
+// kayaya dönüşüyor. Ağaç/fidan sistemiyle aynı mantık — hiçbir yeni geometri
+// oluşturulmuyor, sadece mevcut paylaşılan rockGeo/rockMat ölçeklendiriliyor.
+const growingRocks = [];
+const ROCK_GROW_TIME = 70; // saniye — tomurcuktan tam kayaya
+function spawnRockSeed(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const mesh = new THREE.Mesh(rockGeo, rockMat);
+  mesh.position.copy(pos);
+  mesh.position.y = pos.y + 0.05;
+  mesh.scale.setScalar(0.12);
+  scene.add(mesh);
+  growingRocks.push({mesh, pos:pos.clone(), timer:0});
+}
+function updateGrowingRocks(dt){
+  for(let i=growingRocks.length-1; i>=0; i--){
+    const s = growingRocks[i];
+    s.timer += dt;
+    const t = Math.min(1, s.timer/ROCK_GROW_TIME);
+    const scale = 0.12 + 0.88*t;
+    s.mesh.scale.setScalar(scale);
+    s.mesh.position.y = s.pos.y + scale*0.4;
+    if(t>=1){
+      scene.remove(s.mesh);
+      growingRocks.splice(i,1);
+      rocks.push(makeRock(s.pos));
+    }
+  }
+}
+
+// ---------- MADEN (tükenmeyen taş kaynağı) ----------
+// Küçük kayalar (yukarıdaki) kalıcı olarak tükenir; ama adadaki büyük maden yığınları
+// hiç bitmez — sadece her kullanımdan sonra kısa bir bekleme (cooldown) süresi var.
+// Böylece taş kaynağı uzun oyunlarda asla tamamen bitmiyor.
+const mineCoreGeo = new THREE.IcosahedronGeometry(1.5,0);
+const mineVeinGeo = new THREE.IcosahedronGeometry(0.5,0);
+const mineMat = new THREE.MeshStandardMaterial({color:0x6d7278, flatShading:true});
+const mineVeinMat = new THREE.MeshStandardMaterial({color:0xb9c2c9, flatShading:true});
+const MINE_COOLDOWN = 5; // saniye
+const MINE_YIELD = 3;
+function makeMine(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const g = new THREE.Group();
+  const core = new THREE.Mesh(mineCoreGeo, mineMat);
+  core.position.y = 1.0;
+  core.castShadow = !isMobile;
+  g.add(core);
+  for(let i=0;i<3;i++){
+    const vein = new THREE.Mesh(mineVeinGeo, mineVeinMat);
+    vein.position.set(rand(-0.9,0.9), rand(0.6,1.5), rand(-0.9,0.9));
+    vein.scale.setScalar(rand(0.5,0.9));
+    g.add(vein);
+  }
+  g.position.copy(pos);
+  scene.add(g);
+  const rec = {mesh:g, pos:pos.clone(), radius:1.7, type:'mine', cooldownUntil:0};
+  obstacles.push(rec);
+  return rec;
+}
+
+const berries = [];
+const bushGeo = new THREE.SphereGeometry(0.6,7,5);
+const bushMat = new THREE.MeshStandardMaterial({color:0x2d5c2d});
+const berryDotGeo = new THREE.SphereGeometry(0.1,5,5);
+const berryDotMat = new THREE.MeshStandardMaterial({color:0xcc1133});
+const BERRY_REGROW_TIME = 75; // saniye — toplandıktan sonra tekrar meyve vermesi
+function makeBerryBush(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const g = new THREE.Group();
+  const bush = new THREE.Mesh(bushGeo, bushMat);
+  bush.position.y = 0.5;
+  g.add(bush);
+  const dots = [];
+  for(let i=0;i<5;i++){
+    const berry = new THREE.Mesh(berryDotGeo, berryDotMat);
+    berry.position.set(rand(-0.4,0.4), rand(0.4,0.7), rand(-0.4,0.4));
+    g.add(berry);
+    dots.push(berry);
+  }
+  g.position.copy(pos);
+  scene.add(g);
+  const rec = {mesh:g, pos:pos.clone(), radius:0.8, type:'berry', food:20, used:false, berryDots:dots, regrowAt:0};
+  berries.push(rec);
+  return rec;
+}
+function updateBerryRegrow(now){
+  for(const b of berries){
+    if(b.used && now >= b.regrowAt){
+      b.used = false;
+      for(const d of b.berryDots) d.visible = true;
+    }
+  }
+}
+
+const trees=[], rocks=[], mines=[];
+// Ada çok büyüdüğü için nesne sayıları alanla orantılı değil, ölçülü şekilde artırıldı —
+// yoksa hem performans düşer hem de her yer aşırı kalabalık görünürdü. Bolca boş alan,
+// keşfetme hissini güçlendiriyor.
+const treeCount = isMobile?58:82, rockCount = isMobile?30:42, berryCount = isMobile?24:32;
+const mineCount = isMobile?6:8;
+for(let i=0;i<treeCount;i++) trees.push(makeTree(randPointOnIsland(6, ISLAND_R-8)));
+for(let i=0;i<rockCount;i++) rocks.push(makeRock(randPointOnIsland(6, ISLAND_R-8)));
+for(let i=0;i<berryCount;i++) makeBerryBush(randPointOnIsland(6, ISLAND_R-8));
+for(let i=0;i<mineCount;i++){
+  // madenler ada çevresine eşit aralıklarla dağıtılıyor ki hepsi bir köşede kümelenmesin
+  const ang = (i/mineCount)*Math.PI*2 + rand(-0.4,0.4);
+  const r = rand(20, ISLAND_R-10);
+  mines.push(makeMine(new THREE.Vector3(Math.cos(ang)*r, 0, Math.sin(ang)*r)));
+}
+
+// ---------- KALINTILAR (keşif noktaları) ----------
+// Adanın uzak/kenar bölgelerine yerleştirilen gizemli taş kalıntılar. Yaklaşınca otomatik
+// keşfediliyor ve bir kerelik kaynak ödülü veriyor — oyuncuyu adanın uçlarını keşfetmeye teşvik eder.
+const ruins = [];
+const ruinColGeo = new THREE.CylinderGeometry(0.32,0.4,2.3,7);
+const ruinMat = new THREE.MeshStandardMaterial({color:0xb9ae95, flatShading:true});
+function makeRuin(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const g = new THREE.Group();
+  const count = 3+Math.floor(rand(0,3));
+  for(let i=0;i<count;i++){
+    const col = new THREE.Mesh(ruinColGeo, ruinMat);
+    const h = rand(0.45,1.0);
+    col.scale.y = h;
+    col.position.set(rand(-1.5,1.5), (2.3*h)/2, rand(-1.5,1.5));
+    col.rotation.z = rand(-0.18,0.18);
+    col.rotation.x = rand(-0.1,0.1);
+    col.castShadow = !isMobile;
+    g.add(col);
+  }
+  g.position.copy(pos);
+  scene.add(g);
+  const rec = {mesh:g, pos:pos.clone(), radius:1.6, type:'ruin', discovered:false};
+  obstacles.push(rec);
+  ruins.push(rec);
+  return rec;
+}
+const RUIN_COUNT = isMobile?4:5;
+for(let i=0;i<RUIN_COUNT;i++){
+  const ang = (i/RUIN_COUNT)*Math.PI*2 + Math.PI/5 + rand(-0.3,0.3);
+  const r = rand(ISLAND_R*0.72, ISLAND_R*0.92);
+  makeRuin(new THREE.Vector3(Math.cos(ang)*r, 0, Math.sin(ang)*r));
+}
+function updateRuinDiscovery(){
+  for(const r of ruins){
+    if(r.discovered) continue;
+    const dx=player.pos.x-r.pos.x, dz=player.pos.z-r.pos.z;
+    if(Math.hypot(dx,dz) < 5.5){
+      r.discovered = true;
+      player.wood += 6; player.stone += 6; player.berry += 3;
+      showMsg('🏛️ Gizemli kalıntıları keşfettin! +6 🪵 +6 🪨 +3 🍓');
+      sfx.pickup();
+    }
+  }
+}
+
+// ---------- GİZLİ SANDIKLAR ----------
+// Adaya rastgele dağıtılmış, bulunmayı bekleyen hazine sandıkları. İçlerinden ikisi
+// garanti şekilde balta ve kazma veriyor, geri kalanı bonus kaynak dolu.
+const chests = [];
+const chestBaseGeo = new THREE.BoxGeometry(1.0,0.55,0.68);
+const chestLidGeo = new THREE.BoxGeometry(1.04,0.22,0.72);
+const chestMat = new THREE.MeshStandardMaterial({color:0x7a5230});
+const chestTrimMat = new THREE.MeshStandardMaterial({color:0x3f2f1c});
+function makeChest(pos, loot){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(chestBaseGeo, chestMat);
+  base.position.y = 0.28;
+  base.castShadow = !isMobile;
+  g.add(base);
+  const lid = new THREE.Mesh(chestLidGeo, chestTrimMat);
+  lid.position.set(0, 0.58, -0.32);
+  lid.castShadow = !isMobile;
+  g.add(lid);
+  g.position.copy(pos);
+  g.rotation.y = rand(0, Math.PI*2);
+  scene.add(g);
+  const rec = {mesh:g, lidMesh:lid, pos:pos.clone(), radius:0.85, type:'chest', opened:false, loot};
+  obstacles.push(rec);
+  chests.push(rec);
+  return rec;
+}
+function openChest(rec){
+  rec.opened = true;
+  rec.lidMesh.rotation.x = -1.95;
+  rec.lidMesh.position.y += 0.18;
+  rec.lidMesh.position.z -= 0.34;
+  if(rec.loot==='axe'){
+    player.hasAxe = true;
+    showMsg('🪓 Sandıkta balta buldun! Artık ağaçları daha hızlı kesiyorsun');
+  } else if(rec.loot==='pickaxe'){
+    player.hasPickaxe = true;
+    showMsg('⛏️ Sandıkta kazma buldun! Artık yer altını kazabilirsin');
+  } else {
+    const w=Math.floor(rand(4,10)), s=Math.floor(rand(4,10)), f=Math.floor(rand(2,5));
+    player.wood+=w; player.stone+=s; player.berry+=f;
+    showMsg('Sandıkta buldun: +'+w+' 🪵 +'+s+' 🪨 +'+f+' 🍓');
+  }
+  sfx.pickup();
+}
+const CHEST_COUNT = isMobile?8:10;
+for(let i=0;i<CHEST_COUNT;i++){
+  const loot = i===0?'axe' : i===1?'pickaxe' : 'loot';
+  makeChest(randPointOnIsland(14, ISLAND_R-8), loot);
+}
+
+// ---------- YER ALTI KAZI NOKTALARI (kazma gerektirir) ----------
+const digSpots = [];
+const digSpotGeo = new THREE.CircleGeometry(0.85, 9);
+const digSpotMat = new THREE.MeshStandardMaterial({color:0x4a3a2a});
+const digSpotUsedMat = new THREE.MeshStandardMaterial({color:0x2b2119});
+const DIG_COOLDOWN = 100;
+const DIG_YIELD = 6;
+function makeDigSpot(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const mesh = new THREE.Mesh(digSpotGeo, digSpotMat);
+  mesh.rotation.x = -Math.PI/2;
+  mesh.rotation.z = rand(0, Math.PI*2);
+  mesh.position.set(pos.x, pos.y + 0.03, pos.z);
+  scene.add(mesh);
+  const rec = {mesh, pos:pos.clone(), radius:0, type:'digspot', cooldownUntil:0};
+  obstacles.push(rec);
+  digSpots.push(rec);
+  return rec;
+}
+const DIG_COUNT = isMobile?10:14;
+for(let i=0;i<DIG_COUNT;i++) makeDigSpot(randPointOnIsland(10, ISLAND_R-6));
+function updateDigSpots(now){
+  for(const d of digSpots){
+    if(now>=d.cooldownUntil && d.mesh.material!==digSpotMat) d.mesh.material = digSpotMat;
+  }
+}
+
+// ---------- GEMİ (her 5 günde bir liman ziyareti) ----------
+const shipDockPos = new THREE.Vector3(ISLAND_R-3, 0, 0);
+const dockGeo = new THREE.BoxGeometry(1.2,0.18,4.2);
+const dockMat = new THREE.MeshStandardMaterial({color:0x6b4423});
+const dock = new THREE.Mesh(dockGeo, dockMat);
+dock.position.set(shipDockPos.x-1.4, 0.09, shipDockPos.z);
+scene.add(dock);
+
+const shipGroup = new THREE.Group();
+{
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(4.2,1.0,1.7), new THREE.MeshStandardMaterial({color:0x6b4423}));
+  hull.position.y = 0.5;
+  shipGroup.add(hull);
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,3,6), new THREE.MeshStandardMaterial({color:0x5a3d22}));
+  mast.position.set(0,2.2,0);
+  shipGroup.add(mast);
+  const sail = new THREE.Mesh(new THREE.PlaneGeometry(1.7,2.3), new THREE.MeshStandardMaterial({color:0xe8e0c8, side:THREE.DoubleSide}));
+  sail.position.set(0,2.3,0);
+  shipGroup.add(sail);
+}
+shipGroup.visible = false;
+scene.add(shipGroup);
+
+let shipPresent = false;
+let lastShipDay = 0;
+let shipTraded = false;
+function checkShipArrival(){
+  if(dayNum>0 && dayNum%5===0){
+    if(!shipPresent && lastShipDay!==dayNum){
+      lastShipDay = dayNum;
+      shipPresent = true;
+      shipTraded = false;
+      shipGroup.visible = true;
+      shipGroup.position.copy(shipDockPos);
+      showMsg('🚢 Bir gemi limana yanaştı! Kıyıdaki iskeleye git ve ticaret yap.');
+    }
+  } else if(shipPresent){
+    shipPresent = false;
+    shipGroup.visible = false;
+  }
+}
+
+// ---------- KAMP ATEŞLERİ ----------
+const campfires = [];
+const cfBaseGeo = new THREE.CylinderGeometry(0.6,0.7,0.3,8);
+const cfBaseMat = new THREE.MeshStandardMaterial({color:0x5a4632});
+const cfLogGeo = new THREE.CylinderGeometry(0.08,0.08,1.0,6);
+const cfLogMat = new THREE.MeshStandardMaterial({color:0x4a3220});
+const cfFlameGeo = new THREE.ConeGeometry(0.3,0.8,7);
+const cfFlameMat = new THREE.MeshBasicMaterial({color:0xffaa22});
+function makeCampfire(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(cfBaseGeo, cfBaseMat);
+  base.position.y=0.15;
+  g.add(base);
+  for(let i=0;i<5;i++){
+    const log = new THREE.Mesh(cfLogGeo, cfLogMat);
+    log.rotation.z = Math.PI/2.3;
+    log.rotation.y = (i/5)*Math.PI*2;
+    log.position.y = 0.35;
+    g.add(log);
+  }
+  const flame = new THREE.PointLight(0xffaa33, 2.2, 12, 2);
+  flame.position.y = 1.0;
+  g.add(flame);
+  const flameMesh = new THREE.Mesh(cfFlameGeo, cfFlameMat);
+  flameMesh.position.y = 0.9;
+  g.add(flameMesh);
+  g.position.copy(pos);
+  scene.add(g);
+  campfires.push({mesh:g, pos:pos.clone(), light:flame, flameMesh, radius:1.2});
+}
+
+// ---------- İNŞA SİSTEMİ (Ev Yapımı) ----------
+const GRID = 2;
+const MAX_STRUCTURES = 130;
+const structures = []; // {mesh, pos(Vector3), type:'wall'|'door'|'roof', rotIdx:0|1, health, open, collidable}
+
+const BUILD_COSTS = {
+  wall: {wood:3, stone:0},
+  door: {wood:3, stone:1},
+  roof: {wood:2, stone:2}
+};
+
+const wallGeo = new THREE.BoxGeometry(GRID, 2.2, 0.2);
+const wallMat = new THREE.MeshStandardMaterial({color:0x9c7b4f});
+const doorGeo = new THREE.BoxGeometry(GRID*0.94, 2.1, 0.16);
+const doorMat = new THREE.MeshStandardMaterial({color:0x5b3a22});
+const roofGeo = new THREE.BoxGeometry(GRID+0.3, 0.15, GRID+0.3);
+const roofMat = new THREE.MeshStandardMaterial({color:0x7a3b2e});
+const ghostMatValid = new THREE.MeshBasicMaterial({color:0x33ff55, transparent:true, opacity:0.5, depthWrite:false});
+const ghostMatInvalid = new THREE.MeshBasicMaterial({color:0xff3333, transparent:true, opacity:0.5, depthWrite:false});
+
+const ghost = new THREE.Mesh(wallGeo, ghostMatValid);
+ghost.visible = false;
+scene.add(ghost);
+
+let buildMode = false;
+let buildPieceType = 'wall';
+let buildRotIdx = 0; // 0 -> boyca X ekseninde, 1 -> Z ekseninde (90°)
+let ghostValid = false;
+let ghostGX = 0, ghostGZ = 0;
+let demolishTarget = null;
+
+function pieceHeightY(type){
+  if(type==='roof') return GRID*1.1 + 0.075; // duvarların üstü
+  return 1.1; // duvar/kapı taban ortası
+}
+function pieceGeo(type){
+  return type==='wall' ? wallGeo : (type==='door' ? doorGeo : roofGeo);
+}
+function pieceRadius(type){
+  return type==='roof' ? 1.5 : 1.05;
+}
+// Gerçek dikdörtgen çarpışma boyutları (yarım uzunluk/yarım kalınlık) — dairesel yaklaşım yerine
+// duvarın/kapının görsel kutusuyla birebir eşleşir, böylece "dokunmadan çarpma" hissi ortadan kalkar.
+function structDims(type){
+  if(type==='wall') return {lenHalf:GRID/2, thickHalf:0.1};
+  if(type==='door') return {lenHalf:GRID/2, thickHalf:0.09};
+  return null; // çatı: çarpışması yok
+}
+// Duvar/kapı için ızgara kenarına (edge) hizalı konum — GRID noktalarına değil, iki köşe noktası
+// arasındaki KENARA oturur. Böylece yatay ve dikey parçaların uç noktaları tam üst üste gelir ve
+// kare/dörtgen oda kurulduğunda köşelerde boşluk kalmaz. Çatı ise hücre merkezine oturur.
+function computeSnap(px, pz, type, rotIdx){
+  if(type==='roof'){
+    const xi = Math.round(px/GRID - 0.5);
+    const zi = Math.round(pz/GRID - 0.5);
+    return { x:(xi+0.5)*GRID, z:(zi+0.5)*GRID };
+  }
+  if(rotIdx===0){
+    const xi = Math.round(px/GRID - 0.5);
+    const zi = Math.round(pz/GRID);
+    return { x:(xi+0.5)*GRID, z: zi*GRID };
+  } else {
+    const xi = Math.round(px/GRID);
+    const zi = Math.round(pz/GRID - 0.5);
+    return { x: xi*GRID, z:(zi+0.5)*GRID };
+  }
+}
+
+function updateGhost(){
+  const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  const dist = 3.2;
+  const px = player.pos.x + forward.x*dist;
+  const pz = player.pos.z + forward.z*dist;
+  const snap = computeSnap(px, pz, buildPieceType, buildRotIdx);
+  ghostGX = snap.x;
+  ghostGZ = snap.z;
+
+  ghost.geometry = pieceGeo(buildPieceType);
+  const ghostBaseY = terrainHeight(ghostGX, ghostGZ);
+  ghost.position.set(ghostGX, ghostBaseY + pieceHeightY(buildPieceType), ghostGZ);
+  ghost.rotation.y = buildPieceType==='roof' ? 0 : (buildRotIdx===1 ? Math.PI/2 : 0);
+
+  // geçerlilik kontrolü
+  let valid = true;
+  const distC = Math.hypot(ghostGX, ghostGZ);
+  if(distC > ISLAND_R-3) valid = false;
+
+  if(valid){
+    for(const o of obstacles){
+      if(o.dead) continue;
+      const dx=ghostGX-o.pos.x, dz=ghostGZ-o.pos.z;
+      if(Math.hypot(dx,dz) < o.radius + pieceRadius(buildPieceType)*0.7){ valid=false; break; }
+    }
+  }
+  if(valid){
+    for(const s of structures){
+      const dx=ghostGX-s.pos.x, dz=ghostGZ-s.pos.z;
+      const sameCell = Math.hypot(dx,dz) < 0.4;
+      if(sameCell){
+        const sameCategory = (buildPieceType==='roof') === (s.type==='roof');
+        const sameRot = (s.rotIdx===buildRotIdx) || buildPieceType==='roof';
+        if(sameCategory && sameRot){ valid=false; break; }
+      }
+    }
+  }
+  const cost = BUILD_COSTS[buildPieceType];
+  const canAfford = player.wood>=cost.wood && player.stone>=cost.stone;
+  if(!canAfford) valid = false;
+  if(structures.length >= MAX_STRUCTURES) valid = false;
+
+  ghostValid = valid;
+  ghost.material = valid ? ghostMatValid : ghostMatInvalid;
+
+  const pieceNames = {wall:'🧱 Duvar', door:'🚪 Kapı', roof:'🏠 Çatı'};
+  const info = document.getElementById('buildInfo');
+  info.textContent = pieceNames[buildPieceType]+' — '+cost.wood+'🪵'+(cost.stone?' '+cost.stone+'🪨':'')+
+    (valid ? ' ✓ Yerleştirilebilir' : ' ✗ Uygun değil');
+  info.style.display = 'block';
+}
+
+function placeStructure(){
+  if(!buildMode || !ghostValid) return;
+  const cost = BUILD_COSTS[buildPieceType];
+  player.wood -= cost.wood;
+  player.stone -= cost.stone;
+
+  const baseY = terrainHeight(ghostGX, ghostGZ);
+  const geo = pieceGeo(buildPieceType);
+  const mat = buildPieceType==='wall' ? wallMat : (buildPieceType==='door' ? doorMat : roofMat);
+  const theta = buildPieceType==='roof' ? 0 : (buildRotIdx===1 ? Math.PI/2 : 0);
+  let mesh;
+
+  if(buildPieceType==='door'){
+    // Kapı gerçek bir menteşe (hinge) etrafında dönsün diye ayrı bir grup kullanılıyor:
+    // grup, duvar hücresinin bir ucuna (menteşe noktasına) oturuyor, panel ise o noktadan
+    // panel-yarı-uzunluğu kadar öteye yerleştiriliyor. Grubu döndürmek paneli menteşe
+    // etrafında gerçekçi şekilde açıp kapatıyor; bu yüzden panel artık boşlukta kalmıyor.
+    const lenHalf = structDims('door').lenHalf;
+    const hingeX = ghostGX - lenHalf*Math.cos(theta);
+    const hingeZ = ghostGZ + lenHalf*Math.sin(theta);
+    const group = new THREE.Group();
+    group.position.set(hingeX, baseY, hingeZ);
+    group.rotation.y = theta;
+    const panel = new THREE.Mesh(geo, mat);
+    panel.position.set(lenHalf, pieceHeightY('door'), 0);
+    panel.castShadow = !isMobile;
+    group.add(panel);
+    scene.add(group);
+    mesh = group;
+  } else {
+    mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(ghostGX, baseY + pieceHeightY(buildPieceType), ghostGZ);
+    mesh.rotation.y = theta;
+    mesh.castShadow = !isMobile;
+    scene.add(mesh);
+  }
+
+  const rec = {
+    mesh, pos: new THREE.Vector3(ghostGX,baseY,ghostGZ), type: buildPieceType,
+    rotIdx: buildRotIdx, health: 3, open:false,
+    collidable: buildPieceType!=='roof', radius: pieceRadius(buildPieceType), baseRotY: theta
+  };
+  structures.push(rec);
+  showMsg((buildPieceType==='wall'?'Duvar':buildPieceType==='door'?'Kapı':'Çatı')+' inşa edildi!');
+}
+
+function toggleDoor(doorRec){
+  doorRec.open = !doorRec.open;
+  doorRec.mesh.rotation.y = doorRec.baseRotY + (doorRec.open ? Math.PI/2 : 0);
+  doorRec.collidable = !doorRec.open;
+  showMsg(doorRec.open ? 'Kapı açıldı' : 'Kapı kapatıldı');
+}
+
+// Kapı için mesh artık menteşe noktasında olduğundan, nişan alma/hedefleme hesaplarında
+// gerçek merkez noktası (rec.pos) kullanılmalı — menteşe noktası değil.
+function structCenterWorld(s){
+  return s.type==='door'
+    ? new THREE.Vector3(s.pos.x, s.pos.y+pieceHeightY('door'), s.pos.z)
+    : s.mesh.position;
+}
+
+function findDemolishTarget(){
+  const camDir = getCamDir();
+  let best=null, bestDist=4.5;
+  for(const s of structures){
+    const c = structCenterWorld(s);
+    const d = camera.position.distanceTo(c);
+    if(d<bestDist){
+      _toObj.copy(c).sub(camera.position).normalize();
+      if(_toObj.dot(camDir) > 0.85){ best=s; bestDist=d; }
+    }
+  }
+  return best;
+}
+
+function demolishStructure(rec){
+  const cost = BUILD_COSTS[rec.type];
+  player.wood += Math.floor(cost.wood/2);
+  player.stone += Math.floor(cost.stone/2);
+  scene.remove(rec.mesh);
+  const idx = structures.indexOf(rec);
+  if(idx>=0) structures.splice(idx,1);
+  showMsg('Yapı parçası kaldırıldı, kaynak iade edildi');
+}
+
+function setBuildMode(on){
+  buildMode = on;
+  ghost.visible = on;
+  document.getElementById('buildInfo').style.display = on ? 'block' : 'none';
+  document.getElementById('hammerBtn').classList.toggle('active', on);
+  if(isMobile) document.getElementById('buildButtonsMobile').style.display = on ? 'flex' : 'none';
+  if(!on){ demolishTarget = null; }
+  updateMobileBuildSelection();
+}
+
+function cycleBuildPiece(){
+  const order = ['wall','door','roof'];
+  buildPieceType = order[(order.indexOf(buildPieceType)+1)%order.length];
+  updateMobileBuildSelection();
+}
+
+function updateMobileBuildSelection(){
+  if(!isMobile) return;
+  ['bbWall','bbDoor','bbRoof'].forEach(id=>{
+    document.getElementById(id).classList.toggle('selected', document.getElementById(id).dataset.type===buildPieceType);
+  });
+}
+
+// ---------- OYUNCU ----------
+const player = {
+  pos: new THREE.Vector3(0,0,0),
+  velY: 0,
+  onGround: true,
+  yaw: 0,
+  pitch: 0,
+  speed: 5,
+  runMult: 1.8,
+  height: 1.7,
+  health: 100, hunger: 100, thirst: 100,
+  wood: 0, stone: 0, berry: 0, meat: 0,
+  hasAxe: false, hasPickaxe: false,
+  jumpOffset: 0,
+  mountedHorse: null,
+  stamina: 100,
+  dancing: false,
+  _staminaWarned: false,
+  alive: true
+};
+
+camera.position.set(0, player.height, 6);
+
+// ---------- KURTLAR ----------
+const wolves = [];
+const wolfBodyGeo = new THREE.BoxGeometry(1.1,0.6,0.5);
+const wolfBodyMat = new THREE.MeshStandardMaterial({color:0x2b2b2b});
+const wolfHeadGeo = new THREE.ConeGeometry(0.28,0.6,6);
+const wolfHeadMat = new THREE.MeshStandardMaterial({color:0x1c1c1c});
+const wolfEyeGeo = new THREE.SphereGeometry(0.05,6,6);
+const wolfEyeMat = new THREE.MeshBasicMaterial({color:0xff2222});
+function makeWolf(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(wolfBodyGeo, wolfBodyMat);
+  body.position.y=0.4;
+  body.castShadow = !isMobile;
+  g.add(body);
+  const head = new THREE.Mesh(wolfHeadGeo, wolfHeadMat);
+  head.rotation.z = Math.PI/2;
+  head.position.set(0.75,0.45,0);
+  g.add(head);
+  const eye = new THREE.Mesh(wolfEyeGeo, wolfEyeMat);
+  eye.position.set(0.9,0.5,0);
+  g.add(eye);
+  g.position.copy(pos);
+  scene.add(g);
+  wolves.push({mesh:g, pos:pos.clone(), health:3, speed:rand(2.6,3.6), attackCd:0});
+}
+function clearWolves(){
+  wolves.forEach(w=>scene.remove(w.mesh));
+  wolves.length = 0;
+}
+function spawnNightWolves(){
+  const count = 1 + Math.floor(Math.random()*2);
+  // Ada büyüdüğü için kurtlar artık adanın uzak kenarında değil, oyuncunun makul bir
+  // mesafesinde (görünür ama hemen üzerine gelmeyecek şekilde) beliriyor.
+  for(let i=0;i<count;i++){
+    const ang = rand(0, Math.PI*2);
+    const r = rand(18, 30);
+    let x = player.pos.x + Math.cos(ang)*r;
+    let z = player.pos.z + Math.sin(ang)*r;
+    const distC = Math.hypot(x,z);
+    if(distC > ISLAND_R-5){ x = Math.cos(ang)*(ISLAND_R-5); z = Math.sin(ang)*(ISLAND_R-5); }
+    makeWolf(new THREE.Vector3(x,0,z));
+  }
+}
+
+// ---------- AT (evcilleştirme + binme) ----------
+// Vahşi atlar adaya serpiştirilmiş. Evcil değilken 6 kez meyve verince evcilleşiyor;
+// evcilleştikten sonra E ile binilip inilebiliyor. Binerken hız belirgin şekilde artıyor
+// ve at görünmez oluyor (birinci şahıs kamerada zaten görünmeyecekti); inince kaldığı
+// yerde tekrar görünür halde bekliyor.
+const horses = [];
+const HORSE_TAME_FEED = 6;
+const HORSE_SPEED = 12.5;
+const horseBodyGeo = new THREE.BoxGeometry(1.7,0.85,0.65);
+const horseNeckGeo = new THREE.BoxGeometry(0.42,0.75,0.42);
+const horseHeadGeo = new THREE.BoxGeometry(0.34,0.34,0.55);
+const horseLegGeo = new THREE.CylinderGeometry(0.09,0.09,0.85,6);
+const horseTailGeo = new THREE.CylinderGeometry(0.07,0.02,0.7,6);
+const horseBodyMat = new THREE.MeshStandardMaterial({color:0x6b4423});
+const horseManeMat = new THREE.MeshStandardMaterial({color:0x2e1f10});
+function makeHorse(pos){
+  pos.y = terrainHeight(pos.x, pos.z);
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(horseBodyGeo, horseBodyMat);
+  body.position.y = 0.95;
+  body.castShadow = !isMobile;
+  g.add(body);
+  const neck = new THREE.Mesh(horseNeckGeo, horseBodyMat);
+  neck.position.set(0.75, 1.25, 0);
+  neck.rotation.z = -0.35;
+  g.add(neck);
+  const head = new THREE.Mesh(horseHeadGeo, horseBodyMat);
+  head.position.set(1.05, 1.55, 0);
+  g.add(head);
+  const tail = new THREE.Mesh(horseTailGeo, horseManeMat);
+  tail.position.set(-0.9, 1.05, 0);
+  tail.rotation.z = 0.5;
+  g.add(tail);
+  const legOffsets = [[0.55,0.3],[0.55,-0.3],[-0.55,0.3],[-0.55,-0.3]];
+  for(const [lx,lz] of legOffsets){
+    const leg = new THREE.Mesh(horseLegGeo, horseManeMat);
+    leg.position.set(lx, 0.42, lz);
+    g.add(leg);
+  }
+  g.position.copy(pos);
+  scene.add(g);
+  const rec = {mesh:g, pos:pos.clone(), radius:1.0, type:'horse', tamed:false, feedCount:0, mounted:false};
+  obstacles.push(rec);
+  horses.push(rec);
+  return rec;
+}
+const HORSE_COUNT = isMobile?3:4;
+for(let i=0;i<HORSE_COUNT;i++) makeHorse(randPointOnIsland(20, ISLAND_R-20));
+
+// ---------- LAV MAĞARASI & BOSS ----------
+// Adada sabit bir noktada volkanik bir krater/mağara ağzı var. Oyuncu yaklaşınca lavın
+// içinden bir canavar yükseliyor: yukarıdayken saldırgan ve dokunulmaz, bir süre sonra
+// yorulup aşağı iniyor — o an vurulabilir hale geliyor. Sağlığı bitince yenilmiş sayılır
+// ve büyük bir ödül bırakıp bir süreliğine (5 dk) laava geri çekilir.
+// NOT: krater artık terrainHeight() içinde gerçekten oyulan bir çukur — bu yüzden lav ve
+// canavar çimenin altında kalmıyor, gerçekten görünür ve ulaşılabilir.
+const CAVE_POS = new THREE.Vector3(CAVE_XZ.x, 0, CAVE_XZ.z);
+CAVE_POS.y = terrainHeight(CAVE_POS.x, CAVE_POS.z);
+
+const caveRockGeo = new THREE.ConeGeometry(1.1, 3.0, 6);
+const caveRockMat = new THREE.MeshStandardMaterial({color:0x3a2f2a, flatShading:true});
+const CAVE_RIM_COUNT = isMobile?14:18;
+for(let i=0;i<CAVE_RIM_COUNT;i++){
+  const ang = (i/CAVE_RIM_COUNT)*Math.PI*2;
+  const r = CAVE_CRATER_R - 1.5 + rand(-1.0,1.5);
+  const rx = CAVE_POS.x+Math.cos(ang)*r, rz = CAVE_POS.z+Math.sin(ang)*r;
+  const rockY = terrainHeight(rx, rz);
+  const cr = new THREE.Mesh(caveRockGeo, caveRockMat);
+  cr.position.set(rx, rockY+1.3, rz);
+  cr.rotation.set(rand(-0.15,0.15), rand(0,Math.PI*2), rand(-0.15,0.15));
+  cr.scale.set(rand(0.8,1.6), rand(0.9,2.0), rand(0.8,1.6));
+  cr.castShadow = !isMobile;
+  scene.add(cr);
+}
+const lavaGeo = new THREE.CircleGeometry(CAVE_CRATER_R-4, isMobile?20:28);
+const lavaMat = new THREE.MeshStandardMaterial({color:0xff4a1a, emissive:0xff3300, emissiveIntensity:0.9});
+const lava = new THREE.Mesh(lavaGeo, lavaMat);
+lava.rotation.x = -Math.PI/2;
+lava.position.set(CAVE_POS.x, CAVE_POS.y+0.05, CAVE_POS.z);
+scene.add(lava);
+const lavaLight = new THREE.PointLight(0xff5522, 2.2, 26, 2);
+lavaLight.position.set(CAVE_POS.x, CAVE_POS.y+2.0, CAVE_POS.z);
+scene.add(lavaLight);
+
+const bossBodyGeo = new THREE.IcosahedronGeometry(2.1, 0);
+const bossMat = new THREE.MeshStandardMaterial({color:0x5a2015, flatShading:true, emissive:0xaa2200, emissiveIntensity:0.35});
+const bossEyeGeo = new THREE.SphereGeometry(0.28, 8, 8);
+const bossEyeMat = new THREE.MeshStandardMaterial({color:0xffcc33, emissive:0xffaa00, emissiveIntensity:1.2});
+const bossSpikeGeo = new THREE.ConeGeometry(0.35, 1.1, 5);
+const bossGroup = new THREE.Group();
+{
+  const body = new THREE.Mesh(bossBodyGeo, bossMat);
+  bossGroup.add(body);
+  const eyeL = new THREE.Mesh(bossEyeGeo, bossEyeMat); eyeL.position.set(0.7,0.5,1.6); bossGroup.add(eyeL);
+  const eyeR = new THREE.Mesh(bossEyeGeo, bossEyeMat); eyeR.position.set(-0.7,0.5,1.6); bossGroup.add(eyeR);
+  for(let i=0;i<6;i++){
+    const spike = new THREE.Mesh(bossSpikeGeo, bossMat);
+    const a=(i/6)*Math.PI*2;
+    spike.position.set(Math.cos(a)*1.6, 0.9, Math.sin(a)*1.6);
+    spike.rotation.x = 0.4;
+    bossGroup.add(spike);
+  }
+}
+bossGroup.visible = false;
+scene.add(bossGroup);
+
+// Ateş topu (uzak menzil saldırısı) — canavarın "farklı" saldırı çeşitlerinden biri
+const fireballs = [];
+const fireballGeo = new THREE.SphereGeometry(0.35, 8, 8);
+const fireballMat = new THREE.MeshStandardMaterial({color:0xff6622, emissive:0xff4400, emissiveIntensity:1.4});
+function spawnFireball(){
+  const mesh = new THREE.Mesh(fireballGeo, fireballMat);
+  const start = boss.mesh.position.clone(); start.y += 0.6;
+  mesh.position.copy(start);
+  scene.add(mesh);
+  const target = new THREE.Vector3(player.pos.x, player.pos.y+1.0, player.pos.z);
+  fireballs.push({mesh, start, target, t:0, dur:0.85});
+}
+function updateFireballs(dt){
+  for(let i=fireballs.length-1;i>=0;i--){
+    const f = fireballs[i];
+    f.t += dt;
+    const p = Math.min(1, f.t/f.dur);
+    f.mesh.position.lerpVectors(f.start, f.target, p);
+    f.mesh.position.y += Math.sin(p*Math.PI)*1.6;
+    if(p>=1){
+      scene.remove(f.mesh);
+      fireballs.splice(i,1);
+      const d = Math.hypot(player.pos.x-f.target.x, player.pos.z-f.target.z);
+      if(d<3.2){
+        player.health -= 10;
+        showMsg('☄️ Ateş topu sana isabet etti!');
+      }
+    }
+  }
+}
+
+const BOSS_UP_Y = 4.2, BOSS_DOWN_Y = 1.1;
+const boss = {
+  mesh: bossGroup, basePos: CAVE_POS,
+  engaged: false, phase: 'up', phaseTimer: 0, attackCd: 0,
+  health: 8, maxHealth: 8, cooldownUntil: 0
+};
+bossGroup.position.set(CAVE_POS.x, CAVE_POS.y+BOSS_DOWN_Y, CAVE_POS.z);
+
+function updateBossTrigger(){
+  if(boss.engaged) return;
+  const now = performance.now()/1000;
+  if(now < boss.cooldownUntil) return;
+  const d = Math.hypot(player.pos.x-CAVE_POS.x, player.pos.z-CAVE_POS.z);
+  if(d < CAVE_CRATER_R-1){
+    boss.engaged = true;
+    boss.health = boss.maxHealth;
+    boss.phase = 'up';
+    boss.phaseTimer = 0;
+    boss.attackCd = 1.2;
+    boss.mesh.visible = true;
+    showMsg('🌋 Lav Canavarı uyandı! Saldırgan olduğunda uzak dur, yorulunca vur!');
+  }
+}
+function updateBoss(dt){
+  updateFireballs(dt);
+  if(!boss.engaged) return;
+  boss.phaseTimer += dt;
+  const upDur=7, downDur=6;
+  if(boss.phase==='up' && boss.phaseTimer>=upDur){
+    boss.phase='down'; boss.phaseTimer=0;
+    showMsg('🌋 Canavar yoruldu — şimdi vurabilirsin!');
+  } else if(boss.phase==='down' && boss.phaseTimer>=downDur){
+    boss.phase='up'; boss.phaseTimer=0; boss.attackCd=1.0;
+    showMsg('🌋 Canavar tekrar saldırıyor — uzaklaş!');
+  }
+  const targetY = CAVE_POS.y + (boss.phase==='up' ? BOSS_UP_Y : BOSS_DOWN_Y);
+  boss.mesh.position.y += (targetY - boss.mesh.position.y)*Math.min(1, dt*2.2);
+  boss.mesh.position.x = CAVE_POS.x + Math.sin(performance.now()*0.0005)*0.6;
+  boss.mesh.position.z = CAVE_POS.z + Math.cos(performance.now()*0.0004)*0.6;
+  boss.mesh.rotation.y += dt*0.3;
+
+  if(boss.phase==='up'){
+    boss.attackCd -= dt;
+    if(boss.attackCd<=0){
+      const d = Math.hypot(player.pos.x-boss.mesh.position.x, player.pos.z-boss.mesh.position.z);
+      // Farklı saldırı türleri: yakınsa lav sıçraması, uzaktaysa ateş topu fırlatır
+      if(d < 7.5 && Math.random()<0.55){
+        player.health -= 12;
+        showMsg('🔥 Lav sıçraması sana zarar verdi!');
+        boss.attackCd = 1.9;
+      } else if(d < 30){
+        spawnFireball();
+        showMsg('☄️ Canavar ateş topu fırlattı — kaç!');
+        boss.attackCd = 2.3;
+      } else {
+        boss.attackCd = 0.8;
+      }
+    }
+  }
+
+  const bar = document.getElementById('bossBar');
+  bar.style.display = 'block';
+  document.getElementById('bossHealthText').textContent =
+    boss.health+'/'+boss.maxHealth+' — '+(boss.phase==='up' ? '⚔️ Saldırıyor (uzak dur!)' : '😮‍💨 Yorgun (vur!)');
+}
+
+// ---------- SAHNE: HALAY & YAPIMCI MESAJI ----------
+// Adada sabit bir noktada küçük bir sahne var. Yaklaşınca arka planda halay müziği çalmaya
+// başlıyor, sahnedeki figürler el ele tutuşup senkronize şekilde halay çekiyor, ve sahnenin
+// üstünde oyunun yapımcısından yüzen bir mesaj beliriyor.
+const STAGE_XZ = {x: ISLAND_R*0.42, z: ISLAND_R*0.40};
+const STAGE_POS = new THREE.Vector3(STAGE_XZ.x, 0, STAGE_XZ.z);
+STAGE_POS.y = terrainHeight(STAGE_POS.x, STAGE_POS.z);
+
+const stagePlatformGeo = new THREE.BoxGeometry(11, 0.5, 8);
+const stagePlatformMat = new THREE.MeshStandardMaterial({color:0x6b4423});
+const stagePlatform = new THREE.Mesh(stagePlatformGeo, stagePlatformMat);
+stagePlatform.position.set(STAGE_POS.x, STAGE_POS.y+0.25, STAGE_POS.z);
+scene.add(stagePlatform);
+
+const stageBackdropGeo = new THREE.BoxGeometry(11, 3.2, 0.25);
+const stageBackdropMat = new THREE.MeshStandardMaterial({color:0xcc3355});
+const stageBackdrop = new THREE.Mesh(stageBackdropGeo, stageBackdropMat);
+stageBackdrop.position.set(STAGE_POS.x, STAGE_POS.y+0.5+1.6, STAGE_POS.z-3.8);
+scene.add(stageBackdrop);
+
+const stagePoleGeo = new THREE.CylinderGeometry(0.12,0.12,3.6,6);
+const stagePoleMat = new THREE.MeshStandardMaterial({color:0x4a3220});
+[[-5.2,-3.8],[5.2,-3.8],[-5.2,3.8],[5.2,3.8]].forEach(([px,pz])=>{
+  const pole = new THREE.Mesh(stagePoleGeo, stagePoleMat);
+  pole.position.set(STAGE_POS.x+px, STAGE_POS.y+0.5+1.8, STAGE_POS.z+pz);
+  scene.add(pole);
+});
+const stageLightMat = new THREE.PointLight(0xffdd88, 1.4, 20, 2);
+stageLightMat.position.set(STAGE_POS.x, STAGE_POS.y+4.2, STAGE_POS.z);
+scene.add(stageLightMat);
+
+// Halay çeken figürler
+const dancerColors = [0xdc6a3d,0x3d9edc,0xdcc93d,0x8a3ddc,0x3ddc8a,0xdc3d6a];
+const DANCER_COUNT = 6;
+const dancers = [];
+for(let i=0;i<DANCER_COUNT;i++){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.3,0.35,1.05,8),
+    new THREE.MeshStandardMaterial({color: dancerColors[i%dancerColors.length]})
+  );
+  body.position.y = 0.8;
+  g.add(body);
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.27,10,10),
+    new THREE.MeshStandardMaterial({color:0xffdcb0})
+  );
+  head.position.y = 1.55;
+  g.add(head);
+  const armGeo = new THREE.CylinderGeometry(0.07,0.07,0.75,6);
+  const armMat = new THREE.MeshStandardMaterial({color:0xffdcb0});
+  const armL = new THREE.Mesh(armGeo, armMat);
+  armL.position.set(-0.42,1.0,0); armL.rotation.z = Math.PI/2.4;
+  g.add(armL);
+  const armR = new THREE.Mesh(armGeo, armMat);
+  armR.position.set(0.42,1.0,0); armR.rotation.z = -Math.PI/2.4;
+  g.add(armR);
+  const baseX = STAGE_POS.x + (i-(DANCER_COUNT-1)/2)*1.55;
+  const baseZ = STAGE_POS.z + 0.6;
+  g.position.set(baseX, STAGE_POS.y+0.5, baseZ);
+  scene.add(g);
+  dancers.push({mesh:g, baseX, baseZ, baseY: STAGE_POS.y+0.5, phase: i*0.45});
+}
+
+const STAGE_TRIGGER_R = 16;
+let stageActive = false;
+function updateStage(dt){
+  const d = Math.hypot(player.pos.x-STAGE_POS.x, player.pos.z-STAGE_POS.z);
+  const near = d < STAGE_TRIGGER_R;
+  if(near && !stageActive){
+    stageActive = true;
+    startHalayMusic();
+    document.getElementById('producerBanner').style.display = 'block';
+    document.getElementById('danceBtn').style.display = 'flex';
+  } else if(!near && stageActive){
+    stageActive = false;
+    stopHalayMusic();
+    document.getElementById('producerBanner').style.display = 'none';
+    document.getElementById('danceBtn').style.display = 'none';
+    player.dancing = false;
+  }
+  if(stageActive){
+    const t = performance.now()*0.004;
+    dancers.forEach(dr=>{
+      const step = Math.sin(t+dr.phase);
+      dr.mesh.position.x = dr.baseX + step*0.35;
+      dr.mesh.position.y = dr.baseY + Math.abs(Math.cos(t+dr.phase))*0.18;
+      dr.mesh.rotation.y = step*0.3;
+    });
+    // Yapımcı mesajını sahnenin üstünde ekran koordinatına izdüşürüyoruz (basit "billboard")
+    const bannerAnchor = new THREE.Vector3(STAGE_POS.x, STAGE_POS.y+6.2, STAGE_POS.z);
+    const v = bannerAnchor.clone().project(camera);
+    const banner = document.getElementById('producerBanner');
+    if(v.z<1){
+      banner.style.left = ((v.x*0.5+0.5)*innerWidth)+'px';
+      banner.style.top = ((-v.y*0.5+0.5)*innerHeight)+'px';
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+}
+
+// ---------- MASAÜSTÜ KONTROLLERİ ----------
+const keys = {};
+document.addEventListener('keydown', e=>{
+  keys[e.code]=true;
+  if(document.pointerLockElement===canvas) handleAction(e.code);
+});
+document.addEventListener('keyup', e=>{keys[e.code]=false;});
+
+let pointerLocked = false;
+document.addEventListener('pointerlockchange', ()=>{
+  pointerLocked = document.pointerLockElement===canvas;
+  if(!pointerLocked && gameStarted && player.alive && !isMobile){
+    document.getElementById('pauseScreen').style.display='flex';
+  } else if(!isMobile){
+    document.getElementById('pauseScreen').style.display='none';
+  }
+});
+
+document.addEventListener('mousemove', e=>{
+  if(!pointerLocked) return;
+  player.yaw -= e.movementX*0.0022*cameraSensitivity;
+  player.pitch -= e.movementY*0.0022*cameraSensitivity;
+  player.pitch = Math.max(-1.3, Math.min(1.3, player.pitch));
+});
+
+canvas.addEventListener('mousedown', e=>{
+  if(isMobile) return;
+  if(!pointerLocked || !player.alive) return;
+  if(e.button!==0) return;
+  if(buildMode) placeStructure();
+  else attackNearestWolf();
+});
+
+// ---------- MOBİL DOKUNMATİK KONTROLLER ----------
+let paused = false;
+const moveTouch = {id:null, startX:0, startY:0, x:0, y:0, active:false};
+const lookTouch = {id:null, lastX:0, lastY:0, active:false};
+let running = false;
+
+if(isMobile){
+  document.getElementById('touchLayer').style.display='block';
+  document.getElementById('joystickOuter').style.display='block';
+  document.getElementById('btnCluster').style.display='grid';
+  document.getElementById('pauseBtn').style.display='flex';
+  document.getElementById('hammerBtn').style.display='flex';
+  document.getElementById('runBtn').style.display='flex';
+  document.getElementById('instructionsBox').innerHTML =
+    '<b>Sol taraf</b> — Sanal joystick ile hareket<br>' +
+    '<b>Sağ taraf</b> — Parmakla sürükle, etrafa bak<br>' +
+    '<b>⬆</b> — Zıpla &nbsp; | &nbsp; <b>🏃</b> — Koş (aç/kapa)<br>' +
+    '<b>✋</b> — Etkileşim (topla / su iç / kapı aç-kapa)<br>' +
+    '<b>🍓 / 🍖</b> — Yemek ye &nbsp; | &nbsp; <b>🔥</b> — Kamp ateşi kur<br>' +
+    '<b>👊</b> — Saldır (gece kurtlarına karşı)<br>' +
+    '<b>🔨</b> — Yapı modu: duvar, kapı, çatı inşa et<br><br>' +
+    'Açlığını ve susuzluğunu yönet, geceleri kurtlardan sakın; ev inşa ederek korun!';
+  positionRunButton();
+  window.addEventListener('resize', positionRunButton);
+}
+
+function positionRunButton(){
+  const jo = document.getElementById('joystickOuter');
+  const rect = jo.getBoundingClientRect();
+  const rb = document.getElementById('runBtn');
+  rb.style.left = (rect.right + 14) + 'px';
+  rb.style.top = (rect.top + rect.height/2 - 25) + 'px';
+}
+
+const joyOuter = document.getElementById('joystickOuter');
+const joyInner = document.getElementById('joystickInner');
+const JOY_RADIUS = 55;
+
+// Joystick artık HER ZAMAN sabit köşede duruyor (CSS'teki konumundan hiç kaymıyor).
+// Dokunma alanın (moveZoneArea) herhangi bir yerinden başlasa bile, yön vektörü
+// joystick'in SABİT merkezine göre hesaplanıyor — böylece parmak nereye değerse değsin
+// joystick her seferinde aynı yerde kalıyor, "sürekli başka yerde çıkma" sorunu bitiyor.
+let joyCenter = {x:0, y:0};
+function refreshJoyCenter(){
+  const r = joyOuter.getBoundingClientRect();
+  joyCenter.x = r.left + r.width/2;
+  joyCenter.y = r.top + r.height/2;
+}
+refreshJoyCenter();
+window.addEventListener('resize', refreshJoyCenter);
+window.addEventListener('orientationchange', ()=>setTimeout(refreshJoyCenter, 300));
+
+function applyJoyVector(clientX, clientY){
+  let dx = clientX - joyCenter.x;
+  let dy = clientY - joyCenter.y;
+  const dist = Math.hypot(dx,dy);
+  if(dist>JOY_RADIUS){ dx = dx/dist*JOY_RADIUS; dy = dy/dist*JOY_RADIUS; }
+  moveTouch.x = dx/JOY_RADIUS;
+  moveTouch.y = dy/JOY_RADIUS;
+  joyInner.style.transform = 'translate(calc(-50% + '+dx+'px), calc(-50% + '+dy+'px))';
+}
+
+document.getElementById('moveZoneArea').addEventListener('touchstart', e=>{
+  e.preventDefault();
+  if(moveTouch.active) return;
+  const t = e.changedTouches[0];
+  moveTouch.id = t.identifier;
+  moveTouch.active = true;
+  applyJoyVector(t.clientX, t.clientY);
+}, {passive:false});
+
+document.getElementById('moveZoneArea').addEventListener('touchmove', e=>{
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    if(t.identifier===moveTouch.id){
+      applyJoyVector(t.clientX, t.clientY);
+    }
+  }
+}, {passive:false});
+
+function endMoveTouch(e){
+  for(const t of e.changedTouches){
+    if(t.identifier===moveTouch.id){
+      moveTouch.active=false; moveTouch.id=null; moveTouch.x=0; moveTouch.y=0;
+      joyInner.style.transform = 'translate(-50%,-50%)';
+    }
+  }
+}
+document.getElementById('moveZoneArea').addEventListener('touchend', endMoveTouch, {passive:false});
+document.getElementById('moveZoneArea').addEventListener('touchcancel', endMoveTouch, {passive:false});
+
+document.getElementById('lookZone').addEventListener('touchstart', e=>{
+  e.preventDefault();
+  if(lookTouch.active) return;
+  const t = e.changedTouches[0];
+  lookTouch.id = t.identifier;
+  lookTouch.lastX = t.clientX;
+  lookTouch.lastY = t.clientY;
+  lookTouch.active = true;
+}, {passive:false});
+
+document.getElementById('lookZone').addEventListener('touchmove', e=>{
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    if(t.identifier===lookTouch.id){
+      const dx = t.clientX - lookTouch.lastX;
+      const dy = t.clientY - lookTouch.lastY;
+      player.yaw -= dx*0.0038*cameraSensitivity;
+      player.pitch -= dy*0.0038*cameraSensitivity;
+      player.pitch = Math.max(-1.3, Math.min(1.3, player.pitch));
+      lookTouch.lastX = t.clientX;
+      lookTouch.lastY = t.clientY;
+    }
+  }
+}, {passive:false});
+
+function endLookTouch(e){
+  for(const t of e.changedTouches){
+    if(t.identifier===lookTouch.id){ lookTouch.active=false; lookTouch.id=null; }
+  }
+}
+document.getElementById('lookZone').addEventListener('touchend', endLookTouch, {passive:false});
+document.getElementById('lookZone').addEventListener('touchcancel', endLookTouch, {passive:false});
+
+function bindTapButton(id, fn){
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', e=>{ e.preventDefault(); e.stopPropagation(); fn(); }, {passive:false});
+  el.addEventListener('click', e=>{ e.preventDefault(); fn(); });
+}
+bindTapButton('btnInteract', ()=>{ if(gameStarted && player.alive && !paused) handleAction('KeyE'); });
+bindTapButton('btnBerry', ()=>{ if(gameStarted && player.alive && !paused) handleAction('KeyF'); });
+bindTapButton('btnMeat', ()=>{ if(gameStarted && player.alive && !paused) handleAction('KeyG'); });
+bindTapButton('btnFire', ()=>{ if(gameStarted && player.alive && !paused) handleAction('KeyC'); });
+bindTapButton('btnAttack', ()=>{ if(gameStarted && player.alive && !paused) attackNearestWolf(); });
+bindTapButton('jumpBtn', ()=>{ if(gameStarted && player.alive && !paused){ keys['Space']=true; setTimeout(()=>keys['Space']=false, 120); } });
+bindTapButton('runBtn', ()=>{
+  running = !running;
+  document.getElementById('runBtn').classList.toggle('active', running);
+});
+
+bindTapButton('hammerBtn', ()=>{ if(gameStarted && player.alive && !paused) setBuildMode(!buildMode); });
+bindTapButton('waveBtn', ()=>{ if(gameStarted && player.alive && !paused) sendMpEmote(); });
+bindTapButton('danceBtn', ()=>{ if(gameStarted && player.alive && !paused) handleAction('KeyT'); });
+bindTapButton('bbWall', ()=>{ buildPieceType='wall'; updateMobileBuildSelection(); });
+bindTapButton('bbDoor', ()=>{ buildPieceType='door'; updateMobileBuildSelection(); });
+bindTapButton('bbRoof', ()=>{ buildPieceType='roof'; updateMobileBuildSelection(); });
+bindTapButton('bbRotate', ()=>{ buildRotIdx = buildRotIdx===0?1:0; });
+bindTapButton('bbPlace', ()=>{ placeStructure(); });
+bindTapButton('bbDemolish', ()=>{ if(demolishTarget) demolishStructure(demolishTarget); });
+bindTapButton('bbExit', ()=>{ setBuildMode(false); });
+
+document.getElementById('hammerBtn').addEventListener('click', ()=>{ if(gameStarted && player.alive && !paused) setBuildMode(!buildMode); });
+
+document.getElementById('pauseBtn').addEventListener('click', ()=>{
+  if(!gameStarted || !player.alive) return;
+  paused = !paused;
+  document.getElementById('pauseScreen').style.display = paused ? 'flex' : 'none';
+});
+document.getElementById('resumeBtn').addEventListener('click', ()=>{
+  if(isMobile){ paused = false; document.getElementById('pauseScreen').style.display='none'; }
+  else canvas.requestPointerLock();
+});
+
+document.addEventListener('keydown', e=>{
+  if(e.code==='Escape' && isMobile && gameStarted && player.alive){
+    paused = !paused;
+    document.getElementById('pauseScreen').style.display = paused ? 'flex' : 'none';
+  }
+});
+
+// ---------- ETKİLEŞİM ----------
+let currentTarget = null;
+const raycaster = new THREE.Raycaster();
+// Optimizasyon: her karede yeni Vector3 oluşturmak yerine paylaşılan geçici vektörler kullanılıyor (GC baskısını azaltır).
+const _camDir = new THREE.Vector3();
+const _toObj = new THREE.Vector3();
+function getCamDir(){ camera.getWorldDirection(_camDir); return _camDir; }
+
+function updateTarget(){
+  const camDir = getCamDir();
+
+  // Gemi limana yanaşmışsa ve yakınındaysak, diğer her şeyden önce onu hedefle
+  if(shipPresent && camera.position.distanceTo(shipGroup.position) < 5.5){
+    currentTarget = {type:'ship'};
+  } else {
+  let best=null, bestDist=3.2;
+  for(const o of obstacles){
+    if(o.dead) continue;
+    const d = camera.position.distanceTo(o.mesh.position);
+    if(d<bestDist){
+      _toObj.copy(o.mesh.position).sub(camera.position).normalize();
+      if(_toObj.dot(camDir)>0.82){ best=o; bestDist=d; }
+    }
+  }
+  if(!best){
+    for(const b of berries){
+      if(b.used) continue;
+      const d = camera.position.distanceTo(b.mesh.position);
+      if(d<3.2){
+        _toObj.copy(b.mesh.position).sub(camera.position).normalize();
+        if(_toObj.dot(camDir)>0.82){ best=b; bestDist=d; break; }
+      }
+    }
+  }
+  if(!best){
+    for(const s of structures){
+      if(s.type!=='door') continue;
+      const c = structCenterWorld(s);
+      const d = camera.position.distanceTo(c);
+      if(d<3.2){
+        _toObj.copy(c).sub(camera.position).normalize();
+        if(_toObj.dot(camDir)>0.82){ best=s; bestDist=d; break; }
+      }
+    }
+  }
+  if(!best){
+    // Kazı noktaları yere yassı yattığı için yukarıdaki "bakış açısı" kontrolü çok katı
+    // kalır — bunun yerine sadece yakınlık (mesafe) yeterli.
+    for(const d of digSpots){
+      const dd = Math.hypot(player.pos.x-d.pos.x, player.pos.z-d.pos.z);
+      if(dd<2.1){ best=d; break; }
+    }
+  }
+  currentTarget = best;
+  }
+
+  if(buildMode){
+    demolishTarget = findDemolishTarget();
+  }
+
+  const promptEl = document.getElementById('prompt');
+  const distFromCenter = Math.hypot(player.pos.x, player.pos.z);
+  const eLabel = isMobile ? '✋' : 'E';
+  if(player.mountedHorse){
+    promptEl.textContent = eLabel+' — Attan in';
+    promptEl.style.display='block';
+  } else if(buildMode && demolishTarget){
+    promptEl.textContent = (isMobile?'🗑️':'X')+' — Yapıyı kaldır (yarı kaynak iade)';
+    promptEl.style.display='block';
+  } else if(currentTarget && currentTarget.type==='ship'){
+    promptEl.textContent = shipTraded ? '✅ Bu ziyarette zaten ticaret yaptın' : (eLabel+' — Gemiyle ticaret yap 🚢');
+    promptEl.style.display='block';
+  } else if(currentTarget && currentTarget.type==='tree'){
+    promptEl.textContent = eLabel+' — Ağaç kes 🪓'+(player.hasAxe?' (balta)':'')+' ('+currentTarget.health+')';
+    promptEl.style.display='block';
+  } else if(currentTarget && currentTarget.type==='rock'){
+    promptEl.textContent = eLabel+' — Taş kır ⛏️'+(player.hasPickaxe?' (kazma)':'')+' ('+currentTarget.health+')';
+    promptEl.style.display='block';
+  } else if(currentTarget && currentTarget.type==='mine'){
+    const ready = (performance.now()/1000) >= currentTarget.cooldownUntil;
+    promptEl.textContent = ready ? (eLabel+' — Taş çıkar ⛏️ (Maden, tükenmez)') : '⏳ Maden dinleniyor...';
+    promptEl.style.display='block';
+  } else if(currentTarget && currentTarget.type==='digspot'){
+    if(!player.hasPickaxe){
+      promptEl.textContent = '🔒 Kazman yok — gemiden veya sandıktan bul';
+    } else {
+      const ready = (performance.now()/1000) >= currentTarget.cooldownUntil;
+      promptEl.textContent = ready ? (eLabel+' — Yer altını kaz ⛏️') : '⏳ Henüz yenilenmedi...';
+    }
+    promptEl.style.display='block';
+  } else if(currentTarget && currentTarget.type==='chest'){
+    promptEl.textContent = currentTarget.opened ? 'Sandık boş (açılmış)' : (eLabel+' — Sandığı aç 🗝️');
+    promptEl.style.display='block';
+  } else if(currentTarget && currentTarget.type==='ruin'){
+    promptEl.style.display='none';
+  } else if(currentTarget && currentTarget.type==='horse'){
+    if(player.mountedHorse){
+      promptEl.textContent = eLabel+' — Attan in';
+    } else if(!currentTarget.tamed){
+      promptEl.textContent = player.berry>0
+        ? (eLabel+' — Meyve ver 🍓 ('+currentTarget.feedCount+'/'+HORSE_TAME_FEED+')')
+        : '🍓 At seni tanımıyor — meyve gerekiyor (meyven yok)';
+    } else {
+      promptEl.textContent = eLabel+' — Ata bin 🐴';
+    }
+    promptEl.style.display='block';
+  } else if(currentTarget && currentTarget.type==='berry'){
+    promptEl.textContent = eLabel+' — Meyve topla 🍓';
+    promptEl.style.display='block';
+  } else if(currentTarget && currentTarget.type==='door'){
+    promptEl.textContent = eLabel+' — Kapıyı '+(currentTarget.open?'kapat':'aç');
+    promptEl.style.display='block';
+  } else if(distFromCenter > ISLAND_R-8){
+    promptEl.textContent = eLabel+' — Su iç 💧';
+    promptEl.style.display='block';
+  } else {
+    promptEl.style.display='none';
+  }
+}
+
+function showMsg(text){
+  const el = document.getElementById('msgLog');
+  el.textContent = text;
+  el.style.opacity=1;
+  clearTimeout(showMsg._t);
+  showMsg._t = setTimeout(()=>{el.style.opacity=0;}, 1800);
+}
+
+function handleAction(code){
+  if(!player.alive) return;
+  if(code==='KeyV'){
+    sendMpEmote();
+    return;
+  }
+  if(code==='KeyT'){
+    if(stageActive){
+      player.dancing = !player.dancing;
+      showMsg(player.dancing ? 'Halaya katıldın! 💃🕺' : 'Halaydan ayrıldın');
+      if(player.dancing) sfx.pickup();
+    } else {
+      showMsg('Dans etmek için sahneye yaklaşman lazım 🎪');
+    }
+    return;
+  }
+  if(code==='KeyB'){
+    setBuildMode(!buildMode);
+    return;
+  }
+  if(buildMode){
+    if(code==='KeyQ'){ cycleBuildPiece(); return; }
+    if(code==='KeyR'){ buildRotIdx = buildRotIdx===0?1:0; return; }
+    if(code==='KeyX'){ if(demolishTarget) demolishStructure(demolishTarget); return; }
+  } else {
+    if(code==='KeyX'){
+      const t = findDemolishTarget();
+      if(t) demolishStructure(t);
+      return;
+    }
+  }
+  if(code==='KeyE'){
+    const distFromCenter = Math.hypot(player.pos.x, player.pos.z);
+    if(player.mountedHorse){
+      const h = player.mountedHorse;
+      h.mounted = false;
+      h.mesh.visible = true;
+      // At tam oyuncunun üstüne değil, biraz arkasına (yürünen yönün tersine) bırakılıyor —
+      // yoksa oyuncu kendi atının çarpışma alanının içinde kalıp hareket edemiyordu.
+      const backX = player.pos.x + Math.sin(player.yaw)*2.4;
+      const backZ = player.pos.z + Math.cos(player.yaw)*2.4;
+      h.pos.set(backX, terrainHeight(backX,backZ), backZ);
+      h.mesh.position.copy(h.pos);
+      h.mesh.rotation.y = player.yaw + Math.PI/2;
+      player.mountedHorse = null;
+      player.speed = 5;
+      showMsg('Attan indin 🐴');
+    } else if(currentTarget && currentTarget.type==='horse'){
+      if(!currentTarget.tamed){
+        if(player.berry>0){
+          player.berry--;
+          currentTarget.feedCount++;
+          sfx.eat();
+          if(currentTarget.feedCount>=HORSE_TAME_FEED){
+            currentTarget.tamed = true;
+            showMsg('🐴 Atı evcilleştirdin! Artık binip sürebilirsin (E)');
+          } else {
+            showMsg('Ata meyve verdin 🍓 ('+currentTarget.feedCount+'/'+HORSE_TAME_FEED+')');
+          }
+        } else {
+          showMsg('Meyven yok — at seni tanımıyor 🍓');
+        }
+      } else {
+        currentTarget.mounted = true;
+        player.mountedHorse = currentTarget;
+        player.speed = HORSE_SPEED;
+        sfx.build();
+        showMsg('Ata bindin! 🐴 Artık çok daha hızlısın');
+      }
+    } else if(shipPresent && camera.position.distanceTo(shipGroup.position) < 5.5){
+      if(shipTraded){
+        showMsg('Bu ziyarette zaten ticaret yaptın — gemi 5 gün sonra tekrar gelecek');
+      } else {
+        shipTraded = true;
+        if(!player.hasAxe){
+          player.hasAxe = true;
+          showMsg('Gemiciden balta aldın! 🪓 Artık ağaçları daha hızlı kesiyorsun');
+        } else if(!player.hasPickaxe){
+          player.hasPickaxe = true;
+          showMsg('Gemiciden kazma aldın! ⛏️ Artık yer altını kazabilirsin');
+        } else {
+          const w=8, s=8, m=4;
+          player.wood+=w; player.stone+=s; player.meat+=m;
+          showMsg('Tüccardan erzak aldın: +'+w+' 🪵 +'+s+' 🪨 +'+m+' 🍖');
+        }
+        sfx.build();
+      }
+    } else if(currentTarget && currentTarget.type==='tree'){
+      currentTarget.health -= player.hasAxe ? 2 : 1;
+      sfx.chop();
+      if(currentTarget.health<=0){
+        const bonus = player.hasAxe ? 1 : 0;
+        player.wood += currentTarget.wood + bonus;
+        const fellPos = currentTarget.pos;
+        removeObstacle(currentTarget);
+        spawnSapling(fellPos);
+        showMsg('+'+(currentTarget.wood+bonus)+' Odun 🪵 (fidan bırakıldı 🌱)');
+      } else showMsg('Ağaca vuruldu...');
+    } else if(currentTarget && currentTarget.type==='rock'){
+      currentTarget.health -= player.hasPickaxe ? 2 : 1;
+      sfx.mine();
+      if(currentTarget.health<=0){
+        const bonus = player.hasPickaxe ? 1 : 0;
+        player.stone += currentTarget.stone + bonus;
+        const fellPos = currentTarget.pos;
+        removeObstacle(currentTarget);
+        spawnRockSeed(fellPos);
+        showMsg('+'+(currentTarget.stone+bonus)+' Taş 🪨 (yeniden oluşacak)');
+      } else showMsg('Kayaya vuruldu...');
+    } else if(currentTarget && currentTarget.type==='mine'){
+      const now = performance.now()/1000;
+      if(now >= currentTarget.cooldownUntil){
+        const yieldAmt = MINE_YIELD + (player.hasPickaxe?2:0);
+        player.stone += yieldAmt;
+        currentTarget.cooldownUntil = now + (player.hasPickaxe ? MINE_COOLDOWN-1 : MINE_COOLDOWN);
+        sfx.mine();
+        showMsg('+'+yieldAmt+' Taş ⛏️ (Maden)');
+      } else {
+        showMsg('Maden dinleniyor, biraz bekle...');
+      }
+    } else if(currentTarget && currentTarget.type==='digspot'){
+      if(!player.hasPickaxe){
+        showMsg('Bunu kazmak için kazma gerekiyor ⛏️ (gemiden veya sandıktan bul)');
+      } else {
+        const now = performance.now()/1000;
+        if(now >= currentTarget.cooldownUntil){
+          player.stone += DIG_YIELD;
+          currentTarget.cooldownUntil = now + DIG_COOLDOWN;
+          currentTarget.mesh.material = digSpotUsedMat;
+          sfx.mine();
+          showMsg('+'+DIG_YIELD+' Taş ⛏️ (yer altından)');
+        } else {
+          showMsg('Bu nokta henüz yenilenmedi...');
+        }
+      }
+    } else if(currentTarget && currentTarget.type==='chest'){
+      if(!currentTarget.opened) openChest(currentTarget);
+      else showMsg('Bu sandık zaten açılmış');
+    } else if(currentTarget && currentTarget.type==='ruin'){
+      // kalıntılar zaten yaklaşınca otomatik keşfediliyor, ekstra bir etkileşim gerekmiyor
+      showMsg('Bu kalıntıyı zaten keşfettin');
+    } else if(currentTarget && currentTarget.type==='berry'){
+      player.berry += 1;
+      currentTarget.used = true;
+      currentTarget.regrowAt = performance.now()/1000 + BERRY_REGROW_TIME;
+      for(const d of currentTarget.berryDots) d.visible = false;
+      sfx.pickup();
+      showMsg('+1 Meyve 🍓 (çalı zamanla yenilenecek)');
+    } else if(currentTarget && currentTarget.type==='door'){
+      toggleDoor(currentTarget);
+      sfx.door();
+    } else if(distFromCenter > ISLAND_R-8){
+      player.thirst = 100;
+      sfx.drink();
+      showMsg('Su içildi, susuzluk dolduruldu 💧');
+    }
+  } else if(code==='KeyF'){
+    if(player.berry>0){
+      player.berry--; player.hunger = Math.min(100, player.hunger+18);
+      sfx.eat();
+      showMsg('Meyve yendi 🍓');
+    } else showMsg('Meyven yok!');
+  } else if(code==='KeyG'){
+    if(player.meat>0){
+      player.meat--; player.hunger = Math.min(100, player.hunger+40);
+      player.health = Math.min(100, player.health+5);
+      sfx.eat();
+      showMsg('Et yendi 🍖');
+    } else showMsg('Etin yok!');
+  } else if(code==='KeyC'){
+    if(player.wood>=5){
+      const tooClose = campfires.some(c=>c.pos.distanceTo(player.pos)<3);
+      if(tooClose){ showMsg('Buraya çok yakın zaten bir ateş var'); return; }
+      player.wood -= 5;
+      const p = player.pos.clone(); p.y=0;
+      makeCampfire(p);
+      sfx.build();
+      showMsg('Kamp ateşi kuruldu 🔥 (-5 odun)');
+    } else showMsg('Kamp ateşi için 5 odun gerekli');
+  }
+}
+
+function attackNearestWolf(){
+  // Boss "yorgun" (aşağı inmiş) fazdayken ve menzildeyken önce ona vurulur.
+  if(boss.engaged){
+    const bd = camera.position.distanceTo(boss.mesh.position);
+    if(bd < 6.5){
+      if(boss.phase!=='down'){
+        showMsg('Şu an dokunulmaz — yorulmasını bekle! ⚔️');
+        return;
+      }
+      boss.health--;
+      sfx.mine();
+      if(boss.health<=0){
+        boss.engaged = false;
+        boss.mesh.visible = false;
+        boss.cooldownUntil = performance.now()/1000 + 300;
+        document.getElementById('bossBar').style.display = 'none';
+        const w=24, s=24, m=12;
+        player.wood+=w; player.stone+=s; player.meat+=m;
+        showMsg('🏆 Lav Canavarını yendin! +'+w+' 🪵 +'+s+' 🪨 +'+m+' 🍖 (5 dk sonra geri dönecek)');
+      } else {
+        // Her vuruşta canavar hemen lava kaçıyor (bir sonraki "yorgunluk" fazına kadar
+        // dokunulmaz oluyor) ve etrafa takviye kurt çağırıyor — dövüş tek vuruşla bitmiyor.
+        boss.phase = 'up';
+        boss.phaseTimer = 0;
+        boss.attackCd = 1.5;
+        const wolfCount = 1 + (Math.random()<0.5 ? 1 : 0);
+        for(let i=0;i<wolfCount;i++){
+          const ang = rand(0, Math.PI*2);
+          const r = rand(8, 13);
+          const wx = boss.mesh.position.x + Math.cos(ang)*r;
+          const wz = boss.mesh.position.z + Math.sin(ang)*r;
+          makeWolf(new THREE.Vector3(wx, 0, wz));
+        }
+        showMsg('Canavar vurulup kaçtı ve kurtları çağırdı! 🐺 ('+boss.health+'/'+boss.maxHealth+')');
+      }
+      return;
+    }
+  }
+  let nearest=null, nd=4.2;
+  for(const w of wolves){
+    const d = camera.position.distanceTo(w.pos);
+    if(d<nd && !lineBlockedByWalls(player.pos.x, player.pos.z, w.pos.x, w.pos.z)){ nd=d; nearest=w; }
+  }
+  if(nearest){
+    nearest.health--;
+    showMsg('Kurda saldırıldı! ('+nearest.health+' can kaldı)');
+    if(nearest.health<=0){
+      scene.remove(nearest.mesh);
+      const idx = wolves.indexOf(nearest);
+      wolves.splice(idx,1);
+      player.meat += 2;
+      showMsg('Kurt öldürüldü! +2 Et 🍖');
+    }
+  }
+}
+
+// ---------- GÜN/GECE ----------
+let timeOfDay = 0.28;
+const DAY_LENGTH = 240;
+let dayNum = 1;
+let isNight = false;
+
+function updateSky(){
+  const angle = timeOfDay*Math.PI*2;
+  const sunHeight = Math.sin(angle);
+  sun.position.set(Math.cos(angle)*80, sunHeight*80+10, 40);
+  sun.target.position.copy(player.pos);
+
+  const dayColor = new THREE.Color(0x87ceeb);
+  const sunsetColor = new THREE.Color(0xff9a5c);
+  const nightColor = new THREE.Color(0x050518);
+
+  let skyColor, ambIntensity, sunIntensity;
+  if(sunHeight>0.15){
+    skyColor = dayColor; ambIntensity=0.65; sunIntensity=1.1;
+  } else if(sunHeight>-0.15){
+    const t = (sunHeight+0.15)/0.3;
+    skyColor = sunsetColor.clone().lerp(dayColor, t);
+    ambIntensity = 0.35+0.3*t; sunIntensity = 0.5+0.6*t;
+  } else {
+    const t = Math.min(1,(-sunHeight-0.15)/0.5);
+    skyColor = nightColor.clone().lerp(sunsetColor, 1-t);
+    ambIntensity = 0.12; sunIntensity = 0.08;
+  }
+  scene.background = skyColor;
+  scene.fog.color = skyColor;
+  ambient.intensity = ambIntensity;
+  sun.intensity = sunIntensity;
+
+  const wasNight = isNight;
+  isNight = sunHeight < -0.1;
+  if(isNight && !wasNight){
+    spawnNightWolves();
+    showMsg('Gece oldu... dikkatli ol! 🐺');
+  } else if(!isNight && wasNight){
+    clearWolves();
+    showMsg('Gün ağardı ☀️');
+  }
+
+  document.getElementById('dayIndicator').innerHTML =
+    (isNight?'🌙':'☀️')+' Gün <span id="dayNum">'+dayNum+'</span>';
+}
+
+// ---------- HAREKET / ÇARPIŞMA ----------
+function isBlockedAt(x, z, selfRadius){
+  for(const o of obstacles){
+    if(o.dead || o.type==='digspot' || (o.type==='horse' && o.mounted)) continue;
+    const dx=x-o.pos.x, dz=z-o.pos.z;
+    if(Math.hypot(dx,dz) < o.radius+selfRadius) return true;
+  }
+  // Duvar/kapı çarpışması artık gerçek dikdörtgen (kutu) şeklinde kontrol ediliyor —
+  // eski dairesel yaklaşım, duvarın ince kenarından bile geniş bir alanı "dokunmuş" sayıyordu.
+  for(const s of structures){
+    if(!s.collidable) continue;
+    const dims = structDims(s.type);
+    if(!dims) continue;
+    const halfX = s.rotIdx===0 ? dims.lenHalf : dims.thickHalf;
+    const halfZ = s.rotIdx===0 ? dims.thickHalf : dims.lenHalf;
+    if(Math.abs(x-s.pos.x) < halfX+selfRadius && Math.abs(z-s.pos.z) < halfZ+selfRadius) return true;
+  }
+  return false;
+}
+
+function tryMove(dt){
+  const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+
+  let mx = 0, my = 0;
+  if(keys['KeyW']) my += 1;
+  if(keys['KeyS']) my -= 1;
+  if(keys['KeyD']) mx += 1;
+  if(keys['KeyA']) mx -= 1;
+  if(moveTouch.active){
+    my += -moveTouch.y;
+    mx += moveTouch.x;
+  }
+  const mag = Math.hypot(mx,my);
+  if(mag>1){ mx/=mag; my/=mag; }
+
+  if(mag>0.001){
+    const dir = forward.clone().multiplyScalar(my).add(right.clone().multiplyScalar(mx));
+    if(dir.lengthSq()>0) dir.normalize().multiplyScalar(Math.min(1,mag));
+    // Dayanıklılık (stamina) sistemi: sadece yürürken değil koşarken tükenir; at
+    // üstündeyken koşmak yormaz (at zaten koşuyor). Tükenince koşamaz hale gelirsin,
+    // biraz normal yürüyünce/durunca yeniden dolar.
+    const wantsRun = (keys['ShiftLeft']||keys['ShiftRight']||running) && !player.mountedHorse;
+    const isRunning = wantsRun && player.stamina>0.5;
+    if(isRunning){
+      player.stamina = Math.max(0, player.stamina - 22*dt);
+      if(player.stamina<=0 && !player._staminaWarned){
+        player._staminaWarned = true;
+        showMsg('😮‍💨 Yoruldun! Biraz dinlenmeden koşamazsın');
+      }
+    } else {
+      player.stamina = Math.min(100, player.stamina + 13*dt);
+      if(player.stamina>25) player._staminaWarned = false;
+    }
+    const mult = isRunning ? player.runMult : 1;
+    const step = dir.multiplyScalar(player.speed*mult*dt);
+    const newPos = player.pos.clone().add(step);
+
+    const distC = Math.hypot(newPos.x, newPos.z);
+    if(distC < ISLAND_R+1.5 && !isBlockedAt(newPos.x, newPos.z, 0.45)){
+      player.pos.x = newPos.x;
+      player.pos.z = newPos.z;
+    }
+  } else if(!player.mountedHorse){
+    player.stamina = Math.min(100, player.stamina + 13*dt);
+  }
+
+  // Arazi takibi: oyuncu, bulunduğu (x,z) noktasındaki zemin yüksekliğinin üstünde durur;
+  // zıplama/yerçekimi bu zemin yüksekliğine göre eklenen ayrı bir "jumpOffset" ile yönetilir,
+  // böylece tepe/dağ yamaçlarında da doğal şekilde yürünebiliyor.
+  const groundY = terrainHeight(player.pos.x, player.pos.z);
+  if(keys['Space'] && player.onGround){
+    player.velY = 5.2;
+    player.onGround = false;
+  }
+  player.velY -= 14*dt;
+  player.jumpOffset += player.velY*dt;
+  if(player.jumpOffset<=0){ player.jumpOffset=0; player.velY=0; player.onGround=true; }
+  player.pos.y = groundY + player.jumpOffset;
+
+  // At üstündeyken hem kamera yükseliyor (eyerde oturuyormuş gibi) hem de atın modeli
+  // görünür kalıp oyuncuyla birlikte hareket ediyor, böylece atın üstünde olduğun görünüyor.
+  const RIDE_HEIGHT = 1.15;
+  if(player.mountedHorse){
+    const h = player.mountedHorse;
+    h.pos.set(player.pos.x, groundY, player.pos.z);
+    h.mesh.position.copy(h.pos);
+    h.mesh.rotation.y = player.yaw + Math.PI/2;
+  }
+  const rideBonus = player.mountedHorse ? RIDE_HEIGHT : 0;
+  let danceBobY = 0, danceBobX = 0;
+  if(player.dancing){
+    const dt2 = performance.now()*0.004;
+    danceBobY = Math.abs(Math.cos(dt2))*0.14;
+    danceBobX = Math.sin(dt2)*0.06;
+  }
+  camera.position.set(player.pos.x+danceBobX, player.pos.y+player.height+rideBonus+danceBobY, player.pos.z);
+  camera.rotation.order='YXZ';
+  camera.rotation.y = player.yaw;
+  camera.rotation.x = player.pitch;
+
+  if(buildMode) updateGhost();
+}
+
+// ---------- KURT AI ----------
+const _wolfToPlayer = new THREE.Vector3();
+// İki nokta arasında (kurt-oyuncu) kapalı bir duvar/kapı var mı kontrolü — bu olmadan
+// kurtlar duvarın önünde takılı kalsa bile mesafe yeterince yakınsa oyuncuya "duvarın
+// arkasından" vurabiliyordu.
+function lineBlockedByWalls(x1,z1,x2,z2){
+  const steps = 6;
+  for(let i=1;i<steps;i++){
+    const t = i/steps;
+    const x = x1+(x2-x1)*t;
+    const z = z1+(z2-z1)*t;
+    for(const s of structures){
+      if(!s.collidable) continue;
+      const dims = structDims(s.type);
+      if(!dims) continue;
+      const halfX = s.rotIdx===0 ? dims.lenHalf : dims.thickHalf;
+      const halfZ = s.rotIdx===0 ? dims.thickHalf : dims.lenHalf;
+      if(Math.abs(x-s.pos.x) < halfX && Math.abs(z-s.pos.z) < halfZ) return true;
+    }
+  }
+  return false;
+}
+function updateWolves(dt){
+  for(const w of wolves){
+    _wolfToPlayer.set(player.pos.x-w.pos.x, 0, player.pos.z-w.pos.z);
+    const dist = _wolfToPlayer.length();
+    if(dist>0.6){
+      _wolfToPlayer.normalize();
+      const nx = w.pos.x + _wolfToPlayer.x*w.speed*dt;
+      const nz = w.pos.z + _wolfToPlayer.z*w.speed*dt;
+      // duvarlara çarpan kurt o yönde ilerlemez (basit engelleme)
+      if(!isBlockedAt(nx, nz, 0.4)){
+        w.pos.x = nx; w.pos.z = nz;
+      }
+    }
+    w.mesh.position.set(w.pos.x, terrainHeight(w.pos.x,w.pos.z), w.pos.z);
+    w.mesh.lookAt(player.pos.x, 0, player.pos.z);
+
+    w.attackCd -= dt;
+    if(dist<1.8 && w.attackCd<=0 && !lineBlockedByWalls(w.pos.x, w.pos.z, player.pos.x, player.pos.z)){
+      player.health -= 10;
+      w.attackCd = 1.0;
+      showMsg('Kurt saldırdı! 🐺');
+    }
+  }
+}
+
+// ---------- İSTATİSTİKLER ----------
+function updateStats(dt){
+  player.hunger = Math.max(0, player.hunger - dt*(100/480));
+  player.thirst = Math.max(0, player.thirst - dt*(100/320));
+
+  let dmg = 0;
+  if(player.hunger<=0) dmg += 2.2*dt;
+  if(player.thirst<=0) dmg += 3.2*dt;
+  player.health -= dmg;
+
+  const nearFire = campfires.some(c=>c.pos.distanceTo(player.pos)<5);
+  const sheltered = structures.some(s=>s.type==='roof' && Math.hypot(player.pos.x-s.pos.x, player.pos.z-s.pos.z)<1.8);
+  if((nearFire||sheltered) && player.hunger>50 && player.thirst>50 && player.health<100){
+    player.health = Math.min(100, player.health + (nearFire?3:1.5)*dt);
+  } else if(player.hunger>70 && player.thirst>70 && player.health<100){
+    player.health = Math.min(100, player.health + 1*dt);
+  }
+
+  player.health = Math.max(0, Math.min(100, player.health));
+
+  document.getElementById('healthFill').style.width = player.health+'%';
+  document.getElementById('hungerFill').style.width = player.hunger+'%';
+  document.getElementById('thirstFill').style.width = player.thirst+'%';
+  document.getElementById('staminaFill').style.width = player.stamina+'%';
+  document.getElementById('invWood').textContent = player.wood;
+  document.getElementById('invStone').textContent = player.stone;
+  document.getElementById('invBerry').textContent = player.berry;
+  document.getElementById('invMeat').textContent = player.meat;
+  document.getElementById('axeIcon').style.opacity = player.hasAxe ? '1' : '0.25';
+  document.getElementById('pickaxeIcon').style.opacity = player.hasPickaxe ? '1' : '0.25';
+
+  if(player.health<=0 && player.alive){
+    endGame();
+  }
+}
+
+// ---------- ÇOK OYUNCULU (PeerJS, sunucusuz P2P) ----------
+// Yalnızca oyuncuların konumu/yönü ve el sallama senkronize edilir. Ağaç/taş/kurt/boss gibi
+// dünya durumu her istemcide AYRI ilerler — gerçek bir sunucu olmadan (bu tek dosyalık oyun
+// için mümkün değil) ortak dünya durumu senkronize edilemez. Host yıldız (star) topolojisiyle
+// misafirler arasında konum bilgisini aktarır, böylece herkes birbirini görebilir.
+let mpPeer = null;
+let mpIsHost = false;
+let mpConnected = false;
+const mpConns = {};      // host: id -> DataConnection
+let mpHostConn = null;   // misafir: host'a bağlantı
+let myNick = 'Gezgin';
+const remotePlayers = {}; // id -> {mesh, target:Vector3, targetYaw, nick}
+const remoteAvatarColors = [0xdc6a3d, 0x3d9edc, 0xdcc93d, 0x8a3ddc, 0x3ddc8a];
+let remoteColorIdx = 0;
+
+function makeRemoteAvatar(){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32,0.38,1.15,8),
+    new THREE.MeshStandardMaterial({color: remoteAvatarColors[remoteColorIdx%remoteAvatarColors.length]})
+  );
+  remoteColorIdx++;
+  body.position.y = 0.85;
+  g.add(body);
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.3,10,10),
+    new THREE.MeshStandardMaterial({color:0xffdcb0})
+  );
+  head.position.y = 1.68;
+  g.add(head);
+  scene.add(g);
+  return g;
+}
+function ensureRemotePlayer(id, nick){
+  if(!remotePlayers[id]){
+    remotePlayers[id] = {mesh: makeRemoteAvatar(), target:new THREE.Vector3(), targetYaw:0, nick: nick||'Oyuncu'};
+    showMsg((nick||'Bir oyuncu')+' katıldı! 👋');
+  } else if(nick){
+    remotePlayers[id].nick = nick;
+  }
+  return remotePlayers[id];
+}
+function removeRemotePlayer(id){
+  const rp = remotePlayers[id];
+  if(rp){
+    scene.remove(rp.mesh);
+    showMsg((rp.nick||'Bir oyuncu')+' ayrıldı');
+    delete remotePlayers[id];
+  }
+}
+function updateRemotePlayers(dt){
+  for(const id in remotePlayers){
+    const rp = remotePlayers[id];
+    rp.mesh.position.lerp(rp.target, Math.min(1, dt*8));
+    let dy = rp.targetYaw - rp.mesh.rotation.y;
+    while(dy>Math.PI) dy-=Math.PI*2;
+    while(dy<-Math.PI) dy+=Math.PI*2;
+    rp.mesh.rotation.y += dy*Math.min(1, dt*8);
+    if(rp.dancing){
+      const t = performance.now()*0.004;
+      rp.mesh.position.y = rp.target.y + Math.abs(Math.cos(t))*0.14;
+      rp.mesh.position.x += Math.sin(t)*0.03;
+    }
+  }
+}
+function handleMpData(fromId, data){
+  if(data.type==='pos'){
+    const rp = ensureRemotePlayer(data.id, data.nick);
+    rp.target.set(data.x, data.y, data.z);
+    rp.targetYaw = data.yaw;
+    rp.dancing = !!data.dancing;
+    if(mpIsHost){
+      // Host, bu konumu diğer tüm misafirlere aktarır ki birbirlerini de görsünler
+      for(const cid in mpConns){
+        if(cid!==fromId && mpConns[cid].open) mpConns[cid].send(data);
+      }
+    }
+  } else if(data.type==='emote'){
+    const rp = remotePlayers[data.id];
+    showMsg((rp?rp.nick:'Bir oyuncu')+' el salladı! 👋');
+    if(mpIsHost){
+      for(const cid in mpConns){
+        if(cid!==fromId && mpConns[cid].open) mpConns[cid].send(data);
+      }
+    }
+  }
+}
+function broadcastMpPos(){
+  if(!mpConnected) return;
+  const payload = {type:'pos', id: mpPeer.id, x:player.pos.x, y:player.pos.y, z:player.pos.z, yaw:player.yaw, nick:myNick, dancing:!!player.dancing};
+  if(mpIsHost){
+    for(const id in mpConns){ if(mpConns[id].open) mpConns[id].send(payload); }
+  } else if(mpHostConn && mpHostConn.open){
+    mpHostConn.send(payload);
+  }
+}
+function sendMpEmote(){
+  if(!mpConnected) return;
+  showMsg('El salladın! 👋');
+  const payload = {type:'emote', id: mpPeer.id};
+  if(mpIsHost){
+    for(const id in mpConns){ if(mpConns[id].open) mpConns[id].send(payload); }
+  } else if(mpHostConn && mpHostConn.open){
+    mpHostConn.send(payload);
+  }
+}
+let mpPosInterval = null;
+function startMpSync(){
+  mpConnected = true;
+  document.getElementById('waveBtn').style.display = 'flex';
+  if(mpPosInterval) clearInterval(mpPosInterval);
+  mpPosInterval = setInterval(broadcastMpPos, 120);
+}
+
+function mpSetStatus(text){ document.getElementById('mpStatus').textContent = text; }
+
+function mpErrorText(err){
+  const map = {
+    'server-error': 'Sinyal sunucusuna ulaşılamadı (geçici olabilir)',
+    'network': 'Ağ bağlantısı sorunu',
+    'socket-error': 'Bağlantı hatası',
+    'socket-closed': 'Bağlantı beklenmedik şekilde kapandı',
+    'disconnected': 'Sunucudan bağlantı koptu',
+    'peer-unavailable': 'Bu oda kodu bulunamadı — kodu kontrol et',
+    'unavailable-id': 'Bu kod zaten kullanımda, tekrar dene',
+    'webrtc': 'Tarayıcı WebRTC hatası',
+    'browser-incompatible': 'Bu tarayıcı desteklenmiyor'
+  };
+  return map[err.type] || ('Hata: '+err.type);
+}
+function mpStartHost(){
+  if(typeof Peer==='undefined'){
+    mpSetStatus('⚠️ Çok oyunculu kütüphanesi yüklenemedi — internet bağlantını kontrol edip tekrar dene');
+    return;
+  }
+  document.getElementById('mpRetryBtn').style.display = 'none';
+  myNick = (document.getElementById('nickInput').value||'').trim().slice(0,16) || 'Gezgin';
+  document.getElementById('hostPanel').style.display='block';
+  document.getElementById('joinPanel').style.display='none';
+  mpSetStatus('Bağlanılıyor...');
+  if(mpPeer){ mpPeer.destroy(); }
+  mpPeer = new Peer();
+  mpIsHost = true;
+  mpPeer.on('open', id=>{
+    document.getElementById('roomCodeDisplay').textContent = id;
+    mpSetStatus('Oda hazır — misafir bekleniyor (beklemeden de başlayabilirsin)');
+    document.getElementById('mpStartBtn').style.display='inline-block';
+  });
+  mpPeer.on('connection', conn=>{
+    conn.on('open', ()=>{
+      mpConns[conn.peer] = conn;
+      mpConnected = true;
+      startMpSync();
+      mpSetStatus('Bir misafir bağlandı! ✅');
+    });
+    conn.on('data', data=>handleMpData(conn.peer, data));
+    conn.on('close', ()=>{ delete mpConns[conn.peer]; removeRemotePlayer(conn.peer); });
+  });
+  mpPeer.on('error', err=>{
+    mpSetStatus('⚠️ '+mpErrorText(err));
+    document.getElementById('mpRetryBtn').style.display = 'inline-block';
+    document.getElementById('mpRetryBtn').onclick = mpStartHost;
+  });
+}
+function mpJoinRoom(){
+  if(typeof Peer==='undefined'){
+    mpSetStatus('⚠️ Çok oyunculu kütüphanesi yüklenemedi — internet bağlantını kontrol edip tekrar dene');
+    return;
+  }
+  const code = document.getElementById('joinCodeInput').value.trim();
+  if(!code){ mpSetStatus('Önce oda kodunu gir'); return; }
+  document.getElementById('mpRetryBtn').style.display = 'none';
+  myNick = (document.getElementById('nickInput').value||'').trim().slice(0,16) || 'Gezgin';
+  mpSetStatus('Bağlanılıyor...');
+  if(mpPeer){ mpPeer.destroy(); }
+  mpPeer = new Peer();
+  mpIsHost = false;
+  mpPeer.on('open', ()=>{
+    mpHostConn = mpPeer.connect(code, {reliable:true});
+    mpHostConn.on('open', ()=>{
+      startMpSync();
+      mpSetStatus('Bağlandı! ✅');
+      document.getElementById('mpStartBtn').style.display='inline-block';
+    });
+    mpHostConn.on('data', data=>handleMpData('host', data));
+    mpHostConn.on('close', ()=>{
+      mpConnected = false;
+      if(mpPosInterval){ clearInterval(mpPosInterval); mpPosInterval=null; }
+      document.getElementById('waveBtn').style.display='none';
+      mpSetStatus('Bağlantı koptu');
+      showMsg('Sunucuyla bağlantı koptu 🔌');
+    });
+  });
+  mpPeer.on('error', err=>{
+    mpSetStatus('⚠️ '+mpErrorText(err));
+    document.getElementById('mpRetryBtn').style.display = 'inline-block';
+    document.getElementById('mpRetryBtn').onclick = mpJoinRoom;
+  });
+}
+
+document.getElementById('soloModeBtn').addEventListener('click', ()=>{
+  document.getElementById('modeSelect').style.display='none';
+  document.getElementById('instructionsBox').style.display='block';
+  document.getElementById('startBtn').style.display='inline-block';
+  document.getElementById('settingsBtnStart').style.display='inline-block';
+});
+document.getElementById('mpModeBtn').addEventListener('click', ()=>{
+  document.getElementById('modeSelect').style.display='none';
+  document.getElementById('mpPanel').style.display='block';
+});
+document.getElementById('mpBackBtn').addEventListener('click', ()=>{
+  document.getElementById('mpPanel').style.display='none';
+  document.getElementById('modeSelect').style.display='block';
+  document.getElementById('hostPanel').style.display='none';
+  document.getElementById('joinPanel').style.display='none';
+  document.getElementById('mpStartBtn').style.display='none';
+  document.getElementById('waveBtn').style.display='none';
+  mpSetStatus('');
+  if(mpPosInterval){ clearInterval(mpPosInterval); mpPosInterval=null; }
+  if(mpPeer){ mpPeer.destroy(); mpPeer=null; }
+  mpConnected = false;
+});
+document.getElementById('hostBtn').addEventListener('click', mpStartHost);
+document.getElementById('joinShowBtn').addEventListener('click', ()=>{
+  document.getElementById('joinPanel').style.display='block';
+  document.getElementById('hostPanel').style.display='none';
+});
+document.getElementById('joinConnectBtn').addEventListener('click', mpJoinRoom);
+document.getElementById('mpStartBtn').addEventListener('click', beginGame);
+
+// ---------- OYUN DURUMU ----------
+let gameStarted = false;
+let survivalTime = 0;
+const clock = new THREE.Clock();
+
+function beginGame(){
+  document.getElementById('startScreen').style.display='none';
+  gameStarted = true;
+  ensureAudio();
+  if(!isMobile){
+    canvas.requestPointerLock();
+  }
+  clock.getDelta();
+}
+
+document.getElementById('startBtn').addEventListener('click', beginGame);
+document.getElementById('restartBtn').addEventListener('click', ()=>{
+  location.reload();
+});
+
+// ---------- AYARLAR PANELİ (aç/kapat + kontroller) ----------
+const settingsPanel = document.getElementById('settingsPanel');
+const soundToggleEl = document.getElementById('soundToggle');
+const volumeSliderEl = document.getElementById('volumeSlider');
+const volumeValEl = document.getElementById('volumeVal');
+const sensSliderEl = document.getElementById('sensSlider');
+const sensValEl = document.getElementById('sensVal');
+
+function refreshSettingsUI(){
+  soundToggleEl.classList.toggle('on', soundEnabled);
+  volumeSliderEl.value = Math.round(sfxVolume*100);
+  volumeValEl.textContent = Math.round(sfxVolume*100)+'%';
+  sensSliderEl.value = Math.round(cameraSensitivity*100);
+  sensValEl.textContent = Math.round(cameraSensitivity*100)+'%';
+}
+function openSettings(){
+  ensureAudio();
+  refreshSettingsUI();
+  if(gameStarted && player.alive && !paused){
+    paused = true;
+    document.getElementById('pauseScreen').style.display = 'flex';
+  }
+  if(!isMobile) document.exitPointerLock();
+  settingsPanel.style.display = 'flex';
+}
+function closeSettings(){
+  settingsPanel.style.display = 'none';
+}
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('settingsBtnStart').addEventListener('click', openSettings);
+document.getElementById('settingsBtnPause').addEventListener('click', openSettings);
+document.getElementById('settingsCloseBtn').addEventListener('click', closeSettings);
+
+soundToggleEl.addEventListener('click', ()=>{
+  soundEnabled = !soundEnabled;
+  soundToggleEl.classList.toggle('on', soundEnabled);
+  applyVolume();
+  saveSettings();
+  if(soundEnabled) sfx.pickup();
+});
+volumeSliderEl.addEventListener('input', ()=>{
+  sfxVolume = volumeSliderEl.value/100;
+  volumeValEl.textContent = volumeSliderEl.value+'%';
+  applyVolume();
+});
+volumeSliderEl.addEventListener('change', ()=>{ saveSettings(); sfx.pickup(); });
+sensSliderEl.addEventListener('input', ()=>{
+  cameraSensitivity = sensSliderEl.value/100;
+  sensValEl.textContent = sensSliderEl.value+'%';
+});
+sensSliderEl.addEventListener('change', saveSettings);
+
+function endGame(){
+  player.alive = false;
+  if(!isMobile) document.exitPointerLock();
+  const mins = Math.floor(survivalTime/60), secs = Math.floor(survivalTime%60);
+  document.getElementById('goStats').innerHTML =
+    'Hayatta kalma süresi: '+mins+' dk '+secs+' sn<br>Geçirilen gün: '+dayNum;
+  document.getElementById('gameOverScreen').style.display='flex';
+}
+
+// ---------- DÖNGÜ ----------
+function controlsActive(){
+  if(!gameStarted || !player.alive || paused) return false;
+  return isMobile ? true : pointerLocked;
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(0.05, clock.getDelta());
+
+  if(gameStarted && player.alive){
+    if(controlsActive()){
+      tryMove(dt);
+      updateTarget();
+      updateWolves(dt);
+      updateStats(dt);
+      updateGrowingTrees(dt);
+      updateGrowingRocks(dt);
+      updateBerryRegrow(performance.now()/1000);
+      updateRuinDiscovery();
+      updateDigSpots(performance.now()/1000);
+      updateBossTrigger();
+      updateBoss(dt);
+      updateRemotePlayers(dt);
+      updateStage(dt);
+      survivalTime += dt;
+
+      timeOfDay += dt/DAY_LENGTH;
+      if(timeOfDay>=1){
+        timeOfDay-=1; dayNum++;
+        checkShipArrival();
+      }
+    }
+    updateSky();
+    campfires.forEach(c=>{
+      c.flameMesh.scale.y = 1+Math.sin(performance.now()*0.01+c.pos.x)*0.15;
+    });
+  }
+
+  renderer.render(scene, camera);
+}
+updateSky();
+animate();
+
+})();
+</script>
+</body>
+</html>
