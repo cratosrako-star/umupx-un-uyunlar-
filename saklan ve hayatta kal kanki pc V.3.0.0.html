@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saklan Dostum - PC Sürümü</title>
+    <!-- PeerJS Çoklu Oyuncu Bağlantı Kütüphanesi -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body {
+            background-color: #0d0d11;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 1200px;
+            height: 800px;
+            background-color: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        canvas {
+            display: block;
+            background-color: #1a1a1a;
+        }
+        #ui-panel {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            font-weight: bold;
+            font-size: 15px;
+            pointer-events: none;
+            z-index: 10;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .overlay-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(8px);
+            padding: 20px;
+            text-align: center;
+            z-index: 20;
+        }
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            color: #4CAF50;
+            text-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+            letter-spacing: 1.5px;
+        }
+        p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            max-width: 550px;
+            line-height: 1.5;
+            color: #ccc;
+        }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 320px;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-easy { background-color: #2196F3; }
+        .btn-hard { background-color: #f44336; }
+        .btn-secondary { background-color: #ff9800; }
+        .btn-online { background-color: #9c27b0; }
+        .btn-custom { background-color: #e91e63; }
+        .btn-credits { background-color: #00bcd4; }
+        .btn-settings { background-color: #795548; }
+        
+        input[type="text"], select {
+            padding: 12px 18px;
+            font-size: 16px;
+            border-radius: 25px;
+            border: 2px solid #4CAF50;
+            background: #1a1a24;
+            color: white;
+            text-align: center;
+            outline: none;
+            margin-bottom: 15px;
+            width: 250px;
+        }
+
+        .box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: left;
+            max-width: 550px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .room-code-display {
+            font-size: 30px;
+            color: #ffeb3b;
+            letter-spacing: 4px;
+            margin: 12px 0;
+            font-weight: bold;
+            background: rgba(255,255,255,0.1);
+            padding: 10px 25px;
+            border-radius: 12px;
+            border: 1px dashed #ffeb3b;
+        }
+        .setting-box {
+            background: rgba(255,255,255,0.05);
+            padding: 10px 20px;
+            border-radius: 12px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            width: 300px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Oluştur Modu Alt Araç Çubuğu */
+        #custom-tools-panel {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 8px;
+            background: rgba(10, 10, 15, 0.88);
+            padding: 10px 16px;
+            border-radius: 15px;
+            z-index: 15;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .tool-btn {
+            padding: 8px 14px;
+            font-size: 13px;
+            border-radius: 20px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tool-btn.active {
+            outline: 2px solid #ffeb3b;
+            box-shadow: 0 0 10px #ffeb3b;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="1200" height="800"></canvas>
+        
+        <!-- Oyun İçi Arayüz -->
+        <div id="ui-panel">
+            <div>Süre: <span id="timer" style="color: #ffeb3b;">60</span>s</div>
+            <div>Zemin Değişimi: <span id="color-timer" style="color: #ff9800;">10</span>s</div>
+            <div id="p-change-box">Renk Bozulması: <span id="player-color-timer" style="color: #e91e63;">20</span>s</div>
+            <div>Klon Hakkı: <span id="clone-count" style="color: #00bcd4;">2/2</span> (E)</div>
+            <div>Durum: <span id="status" style="color: #4CAF50;">KAMUFLAJLI</span></div>
+        </div>
+
+        <!-- OLUŞTUR MODU ALT ARAÇ BARI -->
+        <div id="custom-tools-panel">
+            <button class="tool-btn" id="btn-toggle-custom" style="background-color: #2ecc71; font-size: 14px;" onclick="toggleCustomPlay()">🚀 OYUNU BAŞLAT</button>
+            <button class="tool-btn active" id="tool-select" style="background-color: #673ab7;" onclick="setCustomTool('select')">👆 Seç/Kontrol Et</button>
+            <button class="tool-btn" id="tool-hider" style="background-color: #4CAF50;" onclick="setCustomTool('hider')">🌿 Saklanan Ekle</button>
+            <button class="tool-btn" id="tool-hunter" style="background-color: #f44336;" onclick="setCustomTool('hunter')">🎯 Avcı Ekle</button>
+            <button class="tool-btn" id="tool-paint" style="background-color: #ff9800;" onclick="setCustomTool('paint')">🖌️ Zemin Boya</button>
+            
+            <select id="custom-color-picker" style="margin: 0; padding: 6px 10px; font-size: 13px; width: auto; border-radius: 15px;">
+                <option value="#e74c3c">Kırmızı</option>
+                <option value="#3498db">Mavi</option>
+                <option value="#2ecc71">Yeşil</option>
+                <option value="#f1c40f">Sarı</option>
+                <option value="#9b59b6">Mor</option>
+            </select>
+
+            <button class="tool-btn" style="background-color: #00bcd4;" onclick="cycleControlledEntity()">🔄 Değiştir (TAB)</button>
+            <button class="tool-btn" style="background-color: #607d8b;" onclick="clearCustomEntities()">🗑️ Temizle</button>
+            <button class="tool-btn" style="background-color: #e91e63;" onclick="showMainMenu()">🏠 Menü</button>
+        </div>
+
+        <!-- ANA MENÜ -->
+        <div id="main-menu" class="overlay-screen">
+            <h1>SAKLAN DOSTUM</h1>
+            <p>Bukalemun gibi renk değiştir, avcılardan saklan veya kendi haritanı tasarla!</p>
+            <div class="btn-group">
+                <button class="btn" onclick="showDifficultyMenu()">🤖 SAKLANAN MODU (TEK KİŞİLİK)</button>
+                <button class="btn btn-online" onclick="showHunterMenu()">🎯 AVCI OL MODU (BOTLARI AVLA)</button>
+                <button class="btn btn-custom" onclick="startCustomMode()">🎨 OLUŞTUR MODU (SERBEST KONTROL)</button>
+                <button class="btn btn-secondary" onclick="showLobbyMenu()">🤝 ARKADAŞINLA OYNA (2-4 OYUNCU)</button>
+                <button class="btn btn-settings" onclick="showSettingsMenu()">⚙️ AYARLAR VE ŞARKI</button>
+                <button class="btn btn-credits" onclick="showHowToPlay()">NASIL OYNANIR?</button>
+                <button class="btn btn-credits" onclick="showCredits()" style="background-color: #607d8b;">YAPIMCI</button>
+            </div>
+        </div>
+
+        <!-- AYARLAR VE ŞARKI MENÜSÜ -->
+        <div id="settings-menu" class="overlay-screen" style="display: none;">
+            <h1>⚙️ AYARLAR</h1>
+            <p>Oyun sesini ve arka plan şarkısını buradan ayarlayabilirsin:</p>
+            
+            <div class="setting-box">
+                <span>🎵 Arka Plan Şarkısı:</span>
+                <button class="btn" id="music-toggle-btn" onclick="toggleMusic()" style="padding: 8px 16px; font-size: 14px;">🔇 MÜZİK: KAPALI</button>
+            </div>
+
+            <div class="setting-box">
+                <span>🔊 Ses Seviyesi:</span>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5" onchange="updateVolume(this.value)">
+            </div>
+
+            <div class="btn-group" style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="showMainMenu()">GERİ DÖN</button>
+            </div>
+        </div>
+
+        <!-- SAKLANAN MODU MENÜSÜ -->
+        <div id="difficulty-menu" class="overlay-screen" style="display: none;">
+            <h1>SAKLANAN MODU</h1>
+            <p>Süreyi ve zorluk derecesini seçip oyuna başla:</p>
+            
+            <div class="setting-box">
+                <label for="hider-duration-select" style="font-weight: bold; color: #ffeb3b;">Süre Seçin:</label>
+                <select id="hider-duration-select">
+                    <option value="30">30 Saniye</option>
+                    <option value="60" selected>60 Saniye (1 Dk)</option>
+                    <option value="90">90 Saniye (1.5 Dk)</option>
+                    <option value="120">120 Saniye (2 Dk)</option>
+                </select>
+            </div>
+
+            <p style="margin-top: 5px; color: #aaa;">Zorluk Derecesi Seç:</p>
+            <div class="btn-group">
+                <button class="btn btn-easy" onclick="startGame('basit')">BASİT (1 Avcı)</button>
+                <button class="btn" onclick="startGame('kolay')">KOLAY (2 Avcı)</button>
+                <button class="btn btn-hard" onclick="startGame('zor')">ZOR (3 Avcı)</button>
+                <button class="btn btn-secondary" onclick="showMainMenu()">GERİ DÖN</button>
+            </div>
+        </div>
+
+        <!-- AVCI MODU MENÜSÜ -->
+        <div id="hunter-menu" class="overlay-screen" style="display: none;">
+            <h1>AVCI MODU</h1>
+            <p>Bot saklananları zaman dolmadan önce avla!</p>
+            
+            <div class="setting-box">
+                <label for="hunter-duration-select" style="font-weight: bold; color: #ffeb3b;">Süre Seçin:</label>
+                <select id="hunter-duration-select">
+                    <option value="30">30 Saniye</option>
+                    <option value="60" selected>60 Saniye (1 Dk)</option>
+                    <option value="90">90 Saniye (1.5 Dk)</option>
+                    <option value="120">120 Saniye (2 Dk)</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-online" onclick="startOnlineHunterMode()">🎯 OYUNU BAŞLAT</button>
+                <button class="btn btn-secondary" onclick="showMainMenu()">GERİ DÖN</button>
+            </div>
+        </div>
+
+        <!-- LOBİ / ODA MENÜSÜ -->
+        <div id="lobby-menu" class="overlay-screen" style="display: none;">
+            <h1>ARKADAŞINLA OYNA</h1>
+            <p>En fazla 4 kişiyle oynayabilirsiniz (Takımlar otomatik yarı yarıya bölünür):</p>
+            
+            <button class="btn" onclick="createRoom()" style="margin-bottom: 15px;">ODA OLUŞTUR</button>
+            <p style="margin: 5px 0;">VEYA</p>
+
+            <input type="text" id="room-code-input" placeholder="ODA KODU GİR" maxlength="8">
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="joinRoom()">ODAYA KATIL</button>
+                <button class="btn btn-credits" onclick="showMainMenu()">GERİ DÖN</button>
+            </div>
+        </div>
+
+        <!-- ODA BEKLEME EKRANI -->
+        <div id="waiting-screen" class="overlay-screen" style="display: none;">
+            <h1 id="waiting-title">ODA OLUŞTURULDU</h1>
+            <p>Bu kodu arkadaşlarına gönder (2-4 Oyuncu):</p>
+            <div class="room-code-display" id="my-room-code">-------</div>
+            
+            <div class="setting-box" id="time-setting-box">
+                <label for="game-duration-select" style="font-weight: bold; color: #ffeb3b;">Oyun Süresi:</label>
+                <select id="game-duration-select" onchange="onTimeSelectionChange()">
+                    <option value="30">30 Saniye</option>
+                    <option value="60" selected>60 Saniye (1 Dk)</option>
+                    <option value="90">90 Saniye (1.5 Dk)</option>
+                    <option value="120">120 Saniye (2 Dk)</option>
+                </select>
+            </div>
+
+            <p id="player-count-text" style="font-size: 20px; font-weight: bold; color: #4CAF50; margin: 10px 0;">Odadakiler: 1 / 4</p>
+            <div class="btn-group">
+                <button class="btn" id="start-game-btn" onclick="hostStartMultiplayer()" style="display: none; background-color: #2ecc71;">🚀 OYUNU BAŞLAT</button>
+            </div>
+            <p id="waiting-subtext" style="color: #ff9800; font-size: 14px; margin-top: 15px;">En az 1 arkadaşının katılması bekleniyor...</p>
+        </div>
+
+        <!-- NASIL OYNANIR MENÜSÜ -->
+        <div id="how-to-play-menu" class="overlay-screen" style="display: none;">
+            <h1>NASIL OYNANIR?</h1>
+            <div class="box">
+                <ul>
+                    <li>🕹️ <b>Hareket:</b> Klavyedeki <b>W, A, S, D</b> veya <b>Yön Tuşları</b> ile hareket et.</li>
+                    <li>🎨 <b>Kamuflaj:</b> Durduğun karenin rengine bürünmek için <b>SPACE (Boşluk)</b> tuşuna bas.</li>
+                    <li>🎭 <b>Sahte Klon:</b> <b>E</b> tuşuna basarak <b>2 sahte klon</b> bırak!</li>
+                    <li>🛠️ <b>Oluştur Modu:</b> Önce haritanı tasarla, karakter ekle; sonra <b>🚀 Oyunu Başlat</b> butonuna bas!</li>
+                </ul>
+            </div>
+            <button class="btn" onclick="showMainMenu()">ANLADIM, GERİ DÖN</button>
+        </div>
+
+        <!-- YAPIMCI MENÜSÜ -->
+        <div id="credits-menu" class="overlay-screen" style="display: none;">
+            <h1>OYUNUN YAPIMCISI</h1>
+            <div class="box" style="text-align: center; padding: 40px; font-size: 22px;">
+                👑 <b>Yapımcı:</b> <span style="color: #4CAF50; font-size: 30px; font-weight: bold;">umupx</span> 👑
+            </div>
+            <button class="btn" onclick="showMainMenu()">GERİ DÖN</button>
+        </div>
+
+        <!-- OYUN SONU MENÜSÜ -->
+        <div id="game-over-menu" class="overlay-screen" style="display: none;">
+            <h1 id="title">KAZANAN TAKIM: AVCILAR 🎯</h1>
+            <p id="description" style="font-size: 18px; margin: 15px 0; font-weight: bold;"></p>
+            <div class="btn-group">
+                <button class="btn" onclick="showMainMenu()">ANA MENÜYE DÖN</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const timerEl = document.getElementById('timer');
+        const colorTimerEl = document.getElementById('color-timer');
+        const playerColorTimerEl = document.getElementById('player-color-timer');
+        const cloneCountEl = document.getElementById('clone-count');
+        const pChangeBox = document.getElementById('p-change-box');
+        const statusEl = document.getElementById('status');
+        const customToolsPanel = document.getElementById('custom-tools-panel');
+
+        const mainMenu = document.getElementById('main-menu');
+        const settingsMenu = document.getElementById('settings-menu');
+        const difficultyMenu = document.getElementById('difficulty-menu');
+        const hunterMenu = document.getElementById('hunter-menu');
+        const lobbyMenu = document.getElementById('lobby-menu');
+        const waitingScreen = document.getElementById('waiting-screen');
+        const howToPlayMenu = document.getElementById('how-to-play-menu');
+        const creditsMenu = document.getElementById('credits-menu');
+        const gameOverMenu = document.getElementById('game-over-menu');
+        const titleEl = document.getElementById('title');
+        const descEl = document.getElementById('description');
+
+        const durationSelect = document.getElementById('game-duration-select');
+
+        const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6'];
+        const gridSize = 100;
+        const cols = canvas.width / gridSize;
+        const rows = canvas.height / gridSize;
+
+        let mapGrid = [];
+        let gameActive = false;
+        let gameMode = 'single'; 
+        let selectedDuration = 60;
+        let timeLeft = 60;
+        let colorChangeTimeLeft = 10;
+        let playerColorChangeTimeLeft = 20;
+        let timerInterval;
+
+        let animFrameId = null;
+        let lastTimestamp = 0;
+
+        let clones = [];
+        let remainingClones = 2;
+
+        // --- OLUŞTUR MODU DEĞİŞKENLERİ ---
+        let customEntities = []; 
+        let customActiveIndex = 0; 
+        let customTool = 'select'; 
+        let customIsRunning = false;
+
+        // PeerJS Konfigürasyonu
+        const peerConfig = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        };
+
+        let peer = null;
+        let isHost = false;
+        let connections = [];
+        let hostConnection = null;
+        let myPlayerId = Math.random().toString(36).substring(2, 9);
+
+        let netPlayers = {};
+        let myRole = 'hider';
+
+        let localPlayer = { x: 100, y: 100, color: '#ffffff', radius: 18, speed: 230 };
+        let hunters = [];
+        let botHiders = [];
+
+        const keys = {};
+
+        // --- SES VE ŞARKI SİSTEMİ ---
+        let audioCtx = null;
+        let isMusicPlaying = false;
+        let musicTimer = null;
+        let masterVolume = 0.5;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function updateVolume(val) {
+            masterVolume = parseFloat(val);
+        }
+
+        function playNote(freq, duration, type = 'sine') {
+            if (!audioCtx || !isMusicPlaying) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1 * masterVolume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+        let noteIndex = 0;
+
+        function toggleMusic() {
+            initAudio();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            isMusicPlaying = !isMusicPlaying;
+            const btn = document.getElementById('music-toggle-btn');
+            
+            if (isMusicPlaying) {
+                btn.textContent = "🎵 MÜZİK: AÇIK";
+                btn.style.backgroundColor = "#4CAF50";
+                startBgMusicLoop();
+            } else {
+                btn.textContent = "🔇 MÜZİK: KAPALI";
+                btn.style.backgroundColor = "#f44336";
+                stopBgMusicLoop();
+            }
+        }
+
+        function startBgMusicLoop() {
+            stopBgMusicLoop();
+            musicTimer = setInterval(() => {
+                if (isMusicPlaying) {
+                    const freq = notes[noteIndex % notes.length];
+                    playNote(freq, 0.4, 'triangle');
+                    if (noteIndex % 4 === 0) playNote(130.81, 0.8, 'sine');
+                    noteIndex = (noteIndex + 1) % notes.length;
+                }
+            }, 300);
+        }
+
+        function stopBgMusicLoop() {
+            if (musicTimer) clearInterval(musicTimer);
+        }
+
+        // --- KLON KOYMA SİSTEMİ ---
+        function placeClone() {
+            if (!gameActive) return;
+            
+            if (gameMode === 'custom') {
+                if (!customIsRunning) return;
+                const activeEntity = customEntities[customActiveIndex];
+                if (activeEntity && activeEntity.type === 'hider') {
+                    clones.push({
+                        x: activeEntity.x,
+                        y: activeEntity.y,
+                        color: activeEntity.color,
+                        radius: activeEntity.radius,
+                        ownerId: 'custom'
+                    });
+                }
+                return;
+            }
+
+            if (remainingClones <= 0) return;
+
+            clones.push({
+                x: localPlayer.x,
+                y: localPlayer.y,
+                color: localPlayer.color,
+                radius: localPlayer.radius,
+                ownerId: myPlayerId
+            });
+
+            remainingClones--;
+            cloneCountEl.textContent = `${remainingClones}/2`;
+
+            if (gameMode === 'multiplayer') {
+                const cloneData = { type: 'placeClone', x: localPlayer.x, y: localPlayer.y, color: localPlayer.color, radius: localPlayer.radius };
+                if (isHost) broadcastToClients(cloneData);
+                else if (hostConnection) hostConnection.send(cloneData);
+            }
+        }
+
+        function triggerCamouflage() {
+            if (!gameActive) return;
+            if (gameMode === 'custom') {
+                const activeEntity = customEntities[customActiveIndex];
+                if (activeEntity && activeEntity.type === 'hider') {
+                    activeEntity.color = getCurrentTileColor(activeEntity.x, activeEntity.y);
+                }
+            } else if (gameMode === 'single' || (gameMode === 'multiplayer' && myRole === 'hider')) {
+                localPlayer.color = getCurrentTileColor(localPlayer.x, localPlayer.y);
+            }
+        }
+
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Tab' && gameMode === 'custom') {
+                e.preventDefault();
+                cycleControlledEntity();
+                return;
+            }
+            keys[e.code] = true;
+            if (e.code === 'Space') triggerCamouflage();
+            if (e.code === 'KeyE') placeClone();
+        });
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        // --- OLUŞTUR MODU İŞLEVLERİ ---
+        function startCustomMode() {
+            hideAllScreens();
+            gameMode = 'custom';
+            customIsRunning = false;
+            pChangeBox.style.display = 'none';
+            customToolsPanel.style.display = 'flex';
+            gameActive = true;
+            clones = [];
+            customEntities = [];
+            customActiveIndex = 0;
+            remainingClones = 999;
+            cloneCountEl.textContent = "Sınırsız";
+
+            const toggleBtn = document.getElementById('btn-toggle-custom');
+            toggleBtn.textContent = "🚀 OYUNU BAŞLAT";
+            toggleBtn.style.backgroundColor = "#2ecc71";
+
+            customEntities.push({ type: 'hider', x: 200, y: 200, radius: 18, color: '#ffffff', speed: 230 });
+            customEntities.push({ type: 'hunter', x: 1000, y: 600, radius: 22, color: '#111111', speed: 180, vision: 220, targetX: 500, targetY: 500, state: 'patrol', patrolTimer: 0 });
+
+            generateMap();
+            startGameLoop();
+        }
+
+        function toggleCustomPlay() {
+            customIsRunning = !customIsRunning;
+            const btn = document.getElementById('btn-toggle-custom');
+            if (customIsRunning) {
+                btn.textContent = "⏸️ DÜZENLEMEYE DÖN";
+                btn.style.backgroundColor = "#ff9800";
+            } else {
+                btn.textContent = "🚀 OYUNU BAŞLAT";
+                btn.style.backgroundColor = "#2ecc71";
+            }
+        }
+
+        function setCustomTool(tool) {
+            customTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById(`tool-${tool}`);
+            if (btn) btn.classList.add('active');
+        }
+
+        function cycleControlledEntity() {
+            if (customEntities.length === 0) return;
+            customActiveIndex = (customActiveIndex + 1) % customEntities.length;
+        }
+
+        function clearCustomEntities() {
+            customEntities = [];
+            customActiveIndex = 0;
+            clones = [];
+        }
+
+        canvas.addEventListener('click', e => {
+            if (gameMode !== 'custom') return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            if (customTool === 'paint') {
+                const c = Math.floor(mouseX / gridSize);
+                const r = Math.floor(mouseY / gridSize);
+                if (r >= 0 && r < rows && c >= 0 && c < cols) {
+                    mapGrid[r][c] = document.getElementById('custom-color-picker').value;
+                }
+            } else if (customTool === 'hider') {
+                customEntities.push({ type: 'hider', x: mouseX, y: mouseY, radius: 18, color: document.getElementById('custom-color-picker').value, speed: 230 });
+                customActiveIndex = customEntities.length - 1;
+            } else if (customTool === 'hunter') {
+                customEntities.push({ type: 'hunter', x: mouseX, y: mouseY, radius: 22, color: '#111111', speed: 180, vision: 220, targetX: mouseX, targetY: mouseY, state: 'patrol', patrolTimer: 0 });
+                customActiveIndex = customEntities.length - 1;
+            } else if (customTool === 'select') {
+                let minDist = 9999;
+                let foundIdx = -1;
+                customEntities.forEach((ent, idx) => {
+                    const dist = Math.hypot(mouseX - ent.x, mouseY - ent.y);
+                    if (dist < 40 && dist < minDist) {
+                        minDist = dist;
+                        foundIdx = idx;
+                    }
+                });
+                if (foundIdx !== -1) customActiveIndex = foundIdx;
+            }
+        });
+
+        function stopGameLoop() {
+            if (animFrameId) {
+                cancelAnimationFrame(animFrameId);
+                animFrameId = null;
+            }
+            lastTimestamp = 0;
+        }
+
+        function startGameLoop() {
+            stopGameLoop();
+            animFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function cleanNetworkConnections() {
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            connections = [];
+            hostConnection = null;
+            isHost = false;
+        }
+
+        function hideAllScreens() {
+            stopGameLoop();
+            customToolsPanel.style.display = 'none';
+            mainMenu.style.display = 'none';
+            settingsMenu.style.display = 'none';
+            difficultyMenu.style.display = 'none';
+            hunterMenu.style.display = 'none';
+            lobbyMenu.style.display = 'none';
+            waitingScreen.style.display = 'none';
+            howToPlayMenu.style.display = 'none';
+            creditsMenu.style.display = 'none';
+            gameOverMenu.style.display = 'none';
+        }
+
+        function showMainMenu() { 
+            gameActive = false;
+            cleanNetworkConnections();
+            hideAllScreens(); 
+            mainMenu.style.display = 'flex'; 
+        }
+        function showSettingsMenu() { hideAllScreens(); settingsMenu.style.display = 'flex'; }
+        function showDifficultyMenu() { hideAllScreens(); difficultyMenu.style.display = 'flex'; }
+        function showHunterMenu() { hideAllScreens(); hunterMenu.style.display = 'flex'; }
+        function showLobbyMenu() { hideAllScreens(); lobbyMenu.style.display = 'flex'; }
+        function showHowToPlay() { hideAllScreens(); howToPlayMenu.style.display = 'flex'; }
+        function showCredits() { hideAllScreens(); creditsMenu.style.display = 'flex'; }
+
+        function broadcastToClients(data) {
+            connections.forEach(c => { if (c.open) c.send(data); });
+        }
+
+        function onTimeSelectionChange() {
+            if (!isHost) return;
+            selectedDuration = parseInt(durationSelect.value);
+            broadcastToClients({ type: 'lobbyState', count: connections.length + 1, duration: selectedDuration });
+        }
+
+        function createRoom() {
+            cleanNetworkConnections();
+            hideAllScreens();
+            waitingScreen.style.display = 'flex';
+            isHost = true;
+            connections = [];
+            durationSelect.disabled = false;
+            selectedDuration = parseInt(durationSelect.value);
+            
+            const code = 'SD' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('my-room-code').textContent = code;
+            document.getElementById('waiting-title').textContent = "ODA OLUŞTURULDU";
+            document.getElementById('player-count-text').textContent = "Odadakiler: 1 / 4";
+            document.getElementById('start-game-btn').style.display = 'none';
+
+            peer = new Peer(code, peerConfig);
+            peer.on('error', err => { alert('Bağlantı hatası!'); showMainMenu(); });
+            peer.on('connection', conn => {
+                if (connections.length >= 3) {
+                    conn.on('open', () => conn.send({ type: 'full' }));
+                    setTimeout(() => conn.close(), 500);
+                    return;
+                }
+                connections.push(conn);
+                const currentCount = connections.length + 1;
+                conn.on('open', () => broadcastToClients({ type: 'lobbyState', count: currentCount, duration: selectedDuration }));
+                document.getElementById('player-count-text').textContent = `Odadakiler: ${currentCount} / 4`;
+                if (currentCount >= 2) document.getElementById('start-game-btn').style.display = 'inline-block';
+                conn.on('data', data => handleHostMessages(conn, data));
+                conn.on('close', () => {
+                    connections = connections.filter(c => c !== conn);
+                    const count = connections.length + 1;
+                    document.getElementById('player-count-text').textContent = `Odadakiler: ${count} / 4`;
+                    broadcastToClients({ type: 'lobbyState', count: count, duration: selectedDuration });
+                    if (count < 2) document.getElementById('start-game-btn').style.display = 'none';
+                });
+            });
+        }
+
+        function joinRoom() {
+            const inputCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+            if (!inputCode) return alert('Geçerli bir oda kodu girin!');
+            cleanNetworkConnections();
+            hideAllScreens();
+            waitingScreen.style.display = 'flex';
+            isHost = false;
+            peer = new Peer(peerConfig);
+            peer.on('error', err => { alert('Odaya bağlanılamadı!'); showMainMenu(); });
+            peer.on('open', () => {
+                hostConnection = peer.connect(inputCode);
+                hostConnection.on('data', data => handleClientMessages(data));
+            });
+        }
+
+        function hostStartMultiplayer() {
+            if (!isHost || connections.length === 0) return;
+            generateMap();
+            const allIds = [myPlayerId];
+            connections.forEach((c, idx) => allIds.push('client_' + idx));
+            const totalPlayers = allIds.length;
+            const numHunters = Math.max(1, Math.floor(totalPlayers / 2));
+            let availableIndices = Array.from({length: totalPlayers}, (_, i) => i);
+            let hunterIndices = [];
+            for (let i = 0; i < numHunters; i++) {
+                const randIdx = Math.floor(Math.random() * availableIndices.length);
+                hunterIndices.push(availableIndices[randIdx]);
+                availableIndices.splice(randIdx, 1);
+            }
+            netPlayers = {};
+            const spawnPoints = [{ x: 150, y: 150 }, { x: 1050, y: 150 }, { x: 150, y: 650 }, { x: 1050, y: 650 }];
+            allIds.forEach((id, idx) => {
+                const isHunter = hunterIndices.includes(idx);
+                netPlayers[id] = { id: id, x: spawnPoints[idx].x, y: spawnPoints[idx].y, color: isHunter ? '#111111' : '#ffffff', isHunter, role: isHunter ? 'hunter' : 'hider', alive: true };
+            });
+            myRole = netPlayers[myPlayerId].role;
+            connections.forEach((c, idx) => {
+                c.send({ type: 'start', map: mapGrid, players: netPlayers, yourId: 'client_' + idx, duration: selectedDuration });
+            });
+            startMultiplayerGame();
+        }
+
+        function handleHostMessages(conn, data) {
+            if (data.type === 'update') {
+                if (netPlayers[data.id]) { netPlayers[data.id].x = data.x; netPlayers[data.id].y = data.y; netPlayers[data.id].color = data.color; }
+                broadcastToClients({ type: 'syncPlayers', players: netPlayers });
+            } else if (data.type === 'placeClone') { clones.push(data); broadcastToClients(data); }
+        }
+
+        function handleClientMessages(data) {
+            if (data.type === 'lobbyState') { document.getElementById('player-count-text').textContent = `Odadakiler: ${data.count} / 4`; selectedDuration = data.duration; }
+            else if (data.type === 'start') { mapGrid = data.map; netPlayers = data.players; myPlayerId = data.yourId; selectedDuration = data.duration; myRole = netPlayers[myPlayerId].role; startMultiplayerGame(); }
+            else if (data.type === 'syncPlayers') { for (let id in data.players) if (id !== myPlayerId) netPlayers[id] = data.players[id]; }
+        }
+
+        function startMultiplayerGame() {
+            hideAllScreens();
+            gameMode = 'multiplayer';
+            gameActive = true;
+            clones = [];
+            remainingClones = 2;
+            localPlayer.x = netPlayers[myPlayerId].x; localPlayer.y = netPlayers[myPlayerId].y; localPlayer.color = netPlayers[myPlayerId].color;
+            startTimers(selectedDuration);
+            startGameLoop();
+        }
+
+        function startGame(difficulty) {
+            hideAllScreens();
+            gameMode = 'single';
+            pChangeBox.style.display = 'block';
+            myRole = 'hider';
+            clones = []; remainingClones = 2; cloneCountEl.textContent = "2/2";
+            generateMap();
+            localPlayer = { x: 100, y: 100, color: '#ffffff', radius: 18, speed: 230 };
+            hunters = [];
+            let count = 1, speed = 110, vision = 160;
+            if (difficulty === 'kolay') { count = 2; speed = 140; vision = 210; }
+            else if (difficulty === 'zor') { count = 3; speed = 180; vision = 270; }
+            for (let i = 0; i < count; i++) hunters.push({ x: canvas.width - (100 * (i + 1)), y: canvas.height - 100, radius: 22, speed, vision, targetX: 0, targetY: 0, state: 'patrol', patrolTimer: 0 });
+            localPlayer.color = getCurrentTileColor(localPlayer.x, localPlayer.y);
+            gameActive = true;
+            startTimers(parseInt(document.getElementById('hider-duration-select').value));
+            startGameLoop();
+        }
+
+        function startOnlineHunterMode() {
+            hideAllScreens();
+            gameMode = 'hunter_bot';
+            pChangeBox.style.display = 'none';
+            myRole = 'hunter';
+            clones = []; remainingClones = 0; cloneCountEl.textContent = "Yok (Avcı)";
+            generateMap();
+            localPlayer = { x: canvas.width / 2, y: canvas.height / 2, color: '#111111', radius: 22, speed: 260 };
+            botHiders = [{ x: 200, y: 200, radius: 18, color: '#ffffff', alive: true }, { x: 600, y: 400, radius: 18, color: '#ffffff', alive: true }, { x: 1000, y: 600, radius: 18, color: '#ffffff', alive: true }];
+            gameActive = true;
+            startTimers(parseInt(document.getElementById('hunter-duration-select').value));
+            startGameLoop();
+        }
+
+        function startTimers(customTime) {
+            timeLeft = customTime || 60; colorChangeTimeLeft = 10; playerColorChangeTimeLeft = 20;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (gameActive && gameMode !== 'custom') {
+                    timeLeft--; colorChangeTimeLeft--;
+                    if (gameMode === 'single') playerColorChangeTimeLeft--;
+                    if (colorChangeTimeLeft <= 0) { generateMap(); colorChangeTimeLeft = 10; }
+                    if (gameMode === 'single' && playerColorChangeTimeLeft <= 0) { localPlayer.color = colors[Math.floor(Math.random() * colors.length)]; playerColorChangeTimeLeft = 20; }
+                    if (timeLeft <= 0) gameOverSingle(gameMode === 'single', gameMode === 'hunter_bot');
+                }
+            }, 1000);
+        }
+
+        function generateMap() {
+            mapGrid = [];
+            for (let r = 0; r < rows; r++) {
+                let row = [];
+                for (let c = 0; c < cols; c++) row.push(colors[Math.floor(Math.random() * colors.length)]);
+                mapGrid.push(row);
+            }
+        }
+
+        function getCurrentTileColor(x, y) {
+            const col = Math.floor(x / gridSize); const row = Math.floor(y / gridSize);
+            if (row >= 0 && row < rows && col >= 0 && col < cols) return mapGrid[row][col];
+            return '#ffffff';
+        }
+
+        function drawMap() {
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    ctx.fillStyle = mapGrid[r][c];
+                    ctx.fillRect(c * gridSize, r * gridSize, gridSize, gridSize);
+                    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(c * gridSize, r * gridSize, gridSize, gridSize);
+                }
+            }
+        }
+
+        function updateLocalPlayer(dt) {
+            let dx = 0, dy = 0;
+            if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
+            if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
+            if (keys['KeyA'] || keys['ArrowLeft']) dx -= 1;
+            if (keys['KeyD'] || keys['ArrowRight']) dx += 1;
+
+            if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
+
+            if (gameMode === 'custom') {
+                if (customIsRunning && customEntities.length > 0) {
+                    const activeEntity = customEntities[customActiveIndex];
+                    if (activeEntity) {
+                        activeEntity.x += dx * activeEntity.speed * dt;
+                        activeEntity.y += dy * activeEntity.speed * dt;
+                        activeEntity.x = Math.max(activeEntity.radius, Math.min(canvas.width - activeEntity.radius, activeEntity.x));
+                        activeEntity.y = Math.max(activeEntity.radius, Math.min(canvas.height - activeEntity.radius, activeEntity.y));
+                    }
+                }
+                return;
+            }
+
+            const speed = (myRole === 'hunter') ? 260 : 230;
+            localPlayer.x += dx * speed * dt;
+            localPlayer.y += dy * speed * dt;
+            const radius = 20;
+            localPlayer.x = Math.max(radius, Math.min(canvas.width - radius, localPlayer.x));
+            localPlayer.y = Math.max(radius, Math.min(canvas.height - radius, localPlayer.y));
+        }
+
+        function gameOverSingle(won, userWasHunter) {
+            gameActive = false; stopGameLoop(); clearInterval(timerInterval); hideAllScreens(); gameOverMenu.style.display = 'flex';
+            titleEl.textContent = won ? "KAZANDIN! 🎉" : "KAYBETTİN! 🎯";
+            descEl.textContent = won ? "Harika bir oyundu!" : "Bir dahaki sefere daha dikkatli ol!";
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameActive) return;
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.1);
+            lastTimestamp = timestamp;
+
+            updateLocalPlayer(dt);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMap();
+
+            // SAHTE KLONLARI ÇİZ
+            clones.forEach((clone) => {
+                ctx.beginPath(); ctx.arc(clone.x, clone.y, clone.radius, 0, Math.PI * 2);
+                ctx.fillStyle = clone.color; ctx.fill();
+                ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.stroke();
+            });
+
+            // OLUŞTUR MODU ÇİZİMİ VE YAPAY ZEKASI
+            if (gameMode === 'custom') {
+                const activeEntity = customEntities[customActiveIndex];
+
+                if (!customIsRunning) {
+                    statusEl.textContent = `🛠️ TASARIM MODU | Elemanları yerleştirin ve '🚀 OYUNU BAŞLAT'a basın!`;
+                    statusEl.style.color = "#ff9800";
+                } else {
+                    statusEl.textContent = `▶️ OYUN BAŞLADI | Kontrol: #${customActiveIndex + 1} (${activeEntity ? activeEntity.type.toUpperCase() : 'Karakter'})`;
+                    statusEl.style.color = "#4CAF50";
+
+                    // --- SAKLANAN YAKALAMA VE ELENME KONTROLÜ ---
+                    const hunters = customEntities.filter(e => e.type === 'hunter');
+                    for (let h of hunters) {
+                        for (let i = customEntities.length - 1; i >= 0; i--) {
+                            const targetHider = customEntities[i];
+                            if (targetHider && targetHider.type === 'hider') {
+                                const dist = Math.hypot(h.x - targetHider.x, h.y - targetHider.y);
+                                if (dist < h.radius + targetHider.radius) {
+                                    // Saklanan yakalandı, haritadan sil
+                                    customEntities.splice(i, 1);
+                                }
+                            }
+                        }
+                    }
+
+                    // Kontrol edilen karakterin indeksini güvenli şekilde güncelle
+                    if (activeEntity) {
+                        const newIdx = customEntities.indexOf(activeEntity);
+                        if (newIdx !== -1) {
+                            customActiveIndex = newIdx;
+                        } else {
+                            customActiveIndex = Math.max(0, customEntities.length - 1);
+                        }
+                    }
+
+                    // Tüm saklananlar yakalandıysa avcılar kazanır
+                    const remainingHidersCount = customEntities.filter(e => e.type === 'hider').length;
+                    if (remainingHidersCount === 0 && customEntities.length > 0) {
+                        gameOverSingle(true, true);
+                    }
+                }
+
+                const customHiders = customEntities.filter(e => e.type === 'hider');
+
+                customEntities.forEach((ent, idx) => {
+                    const isControlled = (idx === customActiveIndex);
+
+                    // Sadece kontrol edilmeyen yapay zeka avcılar otomatik hareket eder
+                    if (customIsRunning && ent.type === 'hunter' && !isControlled) {
+                        let target = null;
+                        let minDist = 9999;
+
+                        customHiders.forEach(h => {
+                            const tileColor = getCurrentTileColor(h.x, h.y);
+                            if (h.color !== tileColor) {
+                                const d = Math.hypot(h.x - ent.x, h.y - ent.y);
+                                if (d < ent.vision && d < minDist) {
+                                    minDist = d;
+                                    target = h;
+                                }
+                            }
+                        });
+
+                        if (target) {
+                            ent.state = 'chase'; ent.targetX = target.x; ent.targetY = target.y;
+                        } else {
+                            ent.state = 'patrol'; ent.patrolTimer -= dt * 60;
+                            if (ent.patrolTimer <= 0) {
+                                ent.targetX = Math.random() * (canvas.width - 100) + 50;
+                                ent.targetY = Math.random() * (canvas.height - 100) + 50;
+                                ent.patrolTimer = 100;
+                            }
+                        }
+
+                        const angle = Math.atan2(ent.targetY - ent.y, ent.targetX - ent.x);
+                        const spd = (ent.state === 'chase') ? ent.speed * 1.3 : ent.speed;
+                        ent.x += Math.cos(angle) * spd * dt;
+                        ent.y += Math.sin(angle) * spd * dt;
+                    }
+
+                    // Avcı Görüş Alanını Çiz
+                    if (ent.type === 'hunter') {
+                        ctx.beginPath(); ctx.arc(ent.x, ent.y, ent.vision || 220, 0, Math.PI * 2);
+                        ctx.fillStyle = (ent.state === 'chase') ? 'rgba(255,0,0,0.15)' : 'rgba(255,255,255,0.05)'; 
+                        ctx.fill();
+                    }
+
+                    // Karakter Gövdesi Çiz
+                    ctx.beginPath(); ctx.arc(ent.x, ent.y, ent.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = ent.color; ctx.fill();
+                    ctx.lineWidth = 3; 
+                    ctx.strokeStyle = ent.type === 'hunter' ? '#ff0055' : '#ffffff'; 
+                    ctx.stroke();
+
+                    // Kontrol edilen karakter etrafında belirteç halkası göster
+                    if (isControlled) {
+                        ctx.beginPath(); ctx.arc(ent.x, ent.y, ent.radius + 6, 0, Math.PI * 2);
+                        ctx.lineWidth = 3; ctx.strokeStyle = '#ffeb3b'; ctx.stroke();
+                    }
+                });
+
+            } else if (gameMode === 'single') {
+                const tileColor = getCurrentTileColor(localPlayer.x, localPlayer.y);
+                statusEl.textContent = (localPlayer.color === tileColor) ? "KAMUFLAJLI" : "AÇIKTA! (TEHLİKE)";
+                statusEl.style.color = (localPlayer.color === tileColor) ? "#4CAF50" : "#ff5252";
+
+                hunters.forEach(h => {
+                    const isCamouflaged = (localPlayer.color === tileColor);
+                    const dist = Math.hypot(localPlayer.x - h.x, localPlayer.y - h.y);
+                    if (!isCamouflaged && dist < h.vision) { h.state = 'chase'; h.targetX = localPlayer.x; h.targetY = localPlayer.y; }
+                    else {
+                        h.state = 'patrol'; h.patrolTimer -= dt * 60;
+                        if (h.patrolTimer <= 0) { h.targetX = Math.random() * (canvas.width - 100) + 50; h.targetY = Math.random() * (canvas.height - 100) + 50; h.patrolTimer = 80; }
+                    }
+
+                    const angle = Math.atan2(h.targetY - h.y, h.targetX - h.x);
+                    const speed = (h.state === 'chase') ? h.speed * 1.35 : h.speed;
+                    h.x += Math.cos(angle) * speed * dt; h.y += Math.sin(angle) * speed * dt;
+
+                    ctx.beginPath(); ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2); ctx.fillStyle = '#111111'; ctx.fill();
+                    ctx.lineWidth = 3; ctx.strokeStyle = '#ff0055'; ctx.stroke();
+                    if (dist < localPlayer.radius + h.radius) gameOverSingle(false, false);
+                });
+
+                ctx.beginPath(); ctx.arc(localPlayer.x, localPlayer.y, localPlayer.radius, 0, Math.PI * 2);
+                ctx.fillStyle = localPlayer.color; ctx.fill();
+                ctx.lineWidth = 3; ctx.strokeStyle = 'white'; ctx.stroke();
+            }
+
+            animFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        generateMap();
+        drawMap();
+    </script>
+</body>
+</html>
