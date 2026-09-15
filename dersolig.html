@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ders Çalışma Asistanım - Genişletilmiş 5'er Konu Modu</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 25px; }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .nav-buttons button {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px 4px;
+            border: none;
+            background: #3498db;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .nav-buttons button:hover { background: #2980b9; }
+        
+        .tab-content { display: none; animation: fadeIn 0.4s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+        .btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+        .btn:hover { background: #2ecc71; }
+        .btn-danger { background: #c0392b; }
+        .btn-danger:hover { background: #e74c3c; }
+
+        .speech-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .speech-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+        .speak-btn { background: #2980b9; }
+        .speak-btn:hover { background: #1f618d; }
+        .stop-btn { background: #c0392b; }
+        .stop-btn:hover { background: #962d22; }
+        
+        ul { list-style-type: none; padding: 0; }
+        li {
+            background: #ecf0f1;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        li a { text-decoration: none; color: #2980b9; font-weight: bold; }
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .curriculum-card {
+            background: #eef2f7;
+            border: 2px dashed #3498db;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .curriculum-card h4 { margin-top: 0; color: #2980b9; font-size: 18px; }
+
+        .lesson-box {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            margin-top: 15px;
+        }
+        .note-card {
+            background: #ffffff;
+            border-left: 6px solid #e67e22;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+            line-height: 1.7;
+        }
+        .note-card h4 { margin-top: 0; color: #d35400; font-size: 18px; }
+        .quiz-card {
+            background: #eef9f1;
+            border: 1px solid #c3e6cb;
+            padding: 22px;
+            border-radius: 8px;
+            margin-top: 25px;
+            line-height: 1.7;
+        }
+        .page-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+        }
+        .page-btn {
+            background: #8e44ad;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .page-btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+
+        /* VS MODU STİLLERİ */
+        .vs-card {
+            background: #fcf8e3;
+            border: 2px solid #faebcc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .vs-room-badge {
+            display: inline-block;
+            background: #8e44ad;
+            color: white;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .player-tag {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 8px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .status-ready { color: #27ae60; font-weight: bold; }
+        .status-waiting { color: #e67e22; font-weight: bold; }
+        .vs-timer {
+            font-size: 32px;
+            font-weight: bold;
+            color: #c0392b;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .vs-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .vs-opt-btn {
+            background: #34495e;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .vs-opt-btn:hover { background: #2c3e50; }
+        .vs-opt-btn:disabled { background: #7f8c8d; cursor: not-allowed; opacity: 0.6; }
+
+        .vs-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        .vs-overlay-num {
+            font-size: 90px;
+            font-weight: bold;
+            color: #f1c40f;
+            margin: 15px 0;
+            text-shadow: 0 0 25px rgba(241, 196, 15, 0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="vsCountdownOverlay" class="vs-overlay">
+        <h1 style="color: #2ecc71; margin: 0; font-size: 34px;">⚡ HERKES CEVAPLADI!</h1>
+        <p style="font-size: 20px; color: #ddd; margin-top: 10px;">Sonraki soruya geçiliyor...</p>
+        <div id="vsOverlaySec" class="vs-overlay-num">3</div>
+    </div>
+
+    <div class="container">
+        <h1>🎓 Ders Çalışma Asistanım</h1>
+        
+        <div class="nav-buttons">
+            <button onclick="openTab('vsTab')" style="background: #e74c3c;">⚔️ Arkadaş VS</button>
+            <button onclick="openTab('linksTab')">🔗 Linkler</button>
+            <button onclick="openTab('scheduleTab')">📅 Program</button>
+            <button onclick="openTab('mathRandomTab')" style="background: #d35400;">🧮 Rastgele Mat</button>
+            <button onclick="openTab('mathNotesTab')" style="background: #8e44ad;">📐 Mat Hoca</button>
+            <button onclick="openTab('turkceTab')" style="background: #e67e22;">📚 Türkçe Hoca</button>
+            <button onclick="openTab('fenTab')" style="background: #16a085;">🔬 Fen Hoca</button>
+        </div>
+
+        <!-- ARKADAŞ VS SEKMESİ -->
+        <div id="vsTab" class="tab-content active">
+            <h2>⚔️ Arkadaş VS Modu (2-4 Oyuncu)</h2>
+            <div id="vsEntryView">
+                <div class="vs-card">
+                    <h3>1. Takma İsim Belirle</h3>
+                    <input type="text" id="vsNickname" placeholder="Oyuncu Adınız (Örn: FenCanavarı)">
+                </div>
+                <div style="display: flex; gap: 20px;">
+                    <div class="vs-card" style="flex: 1;">
+                        <h3>Oda Oluştur (Yönetici)</h3>
+                        <p>Yeni bir kapışma odası kur ve kodunu arkadaşlarına gönder.</p>
+                        <button class="btn" style="background:#8e44ad;" onclick="createVSRoom()">Oda Oluştur</button>
+                    </div>
+                    <div class="vs-card" style="flex: 1;">
+                        <h3>Odaya Katıl</h3>
+                        <input type="text" id="vsJoinCode" placeholder="4 Haneli Oda Kodu" maxlength="4">
+                        <button class="btn" onclick="joinVSRoom()">Odaya Katıl</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="vsLobbyView" style="display: none;">
+                <div class="vs-card" style="text-align: center;">
+                    <h2>Oda Kodu: <span id="vsRoomCodeDisplay" class="vs-room-badge">----</span></h2>
+                    <p id="vsHostBadge" style="color: #8e44ad; font-weight: bold;"></p>
+                </div>
+                <div id="vsHostSettings" class="vs-card" style="display: none;">
+                    <h4>⚙️ Oda Ayarları (Sadece Yönetici)</h4>
+                    <label>📚 Oynanacak Ders Seçimi:</label>
+                    <select id="vsSubjectSelect">
+                        <option value="all" selected>🔀 Karışık (Tüm Dersler)</option>
+                        <option value="fen">🔬 Fen Bilimleri</option>
+                        <option value="math">📐 Matematik</option>
+                        <option value="turkce">📚 Türkçe</option>
+                    </select>
+                    <label>⏱️ Soru Başına Süre (Saniye):</label>
+                    <select id="vsTimeSelect">
+                        <option value="10">10 Saniye</option>
+                        <option value="15" selected>15 Saniye</option>
+                        <option value="20">20 Saniye</option>
+                        <option value="30">30 Saniye</option>
+                    </select>
+                    <label>🔢 Toplam Soru Sayısı:</label>
+                    <select id="vsCountSelect">
+                        <option value="5">5 Soru</option>
+                        <option value="10">10 Soru</option>
+                    </select>
+                </div>
+                <div class="vs-card">
+                    <h4>👥 Odadaki Oyuncular (<span id="vsPlayerCount">0</span>/4)</h4>
+                    <div id="vsPlayerList"></div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="vsReadyBtn" class="btn" style="background:#f39c12; display:none;" onclick="toggleVSReady()">Hazırım / Onayla</button>
+                    <button id="vsStartBtn" class="btn" style="background:#27ae60; display:none;" onclick="startVSGame()">Savaşı Başlat! 🚀</button>
+                    <button class="btn btn-danger" onclick="leaveVSRoom()">Odadan Ayrıl</button>
+                </div>
+            </div>
+
+            <div id="vsGameView" style="display: none;">
+                <div class="vs-card" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 id="vsQuestionProgress">Soru 1 / 5</h3>
+                    <div id="vsTimerDisplay" class="vs-timer" style="margin:0;">15</div>
+                </div>
+                <div class="lesson-box">
+                    <h3 id="vsQuestionCategory" style="color: #8e44ad; margin-top: 0;"></h3>
+                    <h2 id="vsQuestionText" style="color: #2c3e50;"></h2>
+                    <div id="vsOptionsContainer" class="vs-options"></div>
+                </div>
+                <div class="vs-card" style="margin-top: 20px;">
+                    <h4>🏆 Canlı Sıralama</h4>
+                    <div id="vsLiveScoreboard"></div>
+                </div>
+            </div>
+
+            <div id="vsResultView" style="display: none; text-align: center;">
+                <div class="vs-card">
+                    <h1>🎉 VS Şampiyonu!</h1>
+                    <h2 id="vsWinnerName" style="color: #27ae60; font-size: 32px;"></h2>
+                    <div id="vsFinalLeaderboard" style="margin-top: 20px;"></div>
+                    <button class="btn" style="margin-top: 25px;" onclick="returnToVSLobby()">Lobiye Dön</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LİNKLER SEKMESİ -->
+        <div id="linksTab" class="tab-content">
+            <h2>Çalışma Linklerim</h2>
+            <input type="text" id="linkTitle" placeholder="Konu Adı (Örn: Fen Bilimleri Uzay Sondası)">
+            <input type="text" id="linkUrl" placeholder="Link (Örn: https://youtube.com/...)">
+            <button class="btn" onclick="addLink()">Listeye Ekle</button>
+            <ul id="linkList"></ul>
+        </div>
+
+        <!-- PROGRAM SEKMESİ -->
+        <div id="scheduleTab" class="tab-content">
+            <h2>Ders Programım</h2>
+            <textarea id="scheduleInput" rows="10" placeholder="Pazartesi: Matematik, Fen, Türkçe..."></textarea>
+            <button class="btn" onclick="saveSchedule()">Programı Kaydet</button>
+            <p id="saveMsg" style="color: green; font-weight: bold; display: none; text-align: center; margin-top: 10px;">✅ Program kaydedildi!</p>
+        </div>
+
+        <!-- RASTGELE MATEMATİK SEKMESİ -->
+        <div id="mathRandomTab" class="tab-content">
+            <h2>Rastgele Matematik Soru Pratiği</h2>
+            <select id="gradeSelectRandom" onchange="generateMathQuestion()">
+                <option value="5">5. Sınıf (Dört İşlem)</option>
+                <option value="6">6. Sınıf (Çarpım ve Temel Denklemler)</option>
+                <option value="7">7. Sınıf (Rasyonel ve Tam Sayılar)</option>
+                <option value="8">8. Sınıf (Karekök ve Denklemler)</option>
+            </select>
+            <button class="btn" style="background:#d35400;" onclick="generateMathQuestion()">Rastgele Soru Üret!</button>
+            <div class="lesson-box" style="text-align: center;">
+                <h3 id="questionText" style="font-size: 22px; color: #d35400;">Soru burada görünecek</h3>
+                <input type="number" id="mathAnswer" placeholder="Cevabını buraya yaz" onkeyup="if(event.key==='Enter') checkMathAnswer()">
+                <button class="btn" style="background:#f39c12;" onclick="checkMathAnswer()">Cevabı Kontrol Et</button>
+                <h3 id="mathResult" style="margin-top: 15px;"></h3>
+            </div>
+        </div>
+
+        <!-- MATEMATİK DERSİ SEKMESİ -->
+        <div id="mathNotesTab" class="tab-content">
+            <h2>📐 Matematik - Genişletilmiş 5 Konu Modu</h2>
+            <label>Sınıfınızı Seçin:</label>
+            <select id="mathGrade" onchange="resetAndLoad('math')">
+                <option value="5">5. Sınıf Matematik</option>
+                <option value="6">6. Sınıf Matematik</option>
+                <option value="7">7. Sınıf Matematik</option>
+                <option value="8">8. Sınıf Matematik (LGS)</option>
+            </select>
+            <div id="mathCurriculum" class="curriculum-card"></div>
+            <div id="mathContent" class="lesson-box"></div>
+        </div>
+
+        <!-- TÜRKÇE DERSİ SEKMESİ -->
+        <div id="turkceTab" class="tab-content">
+            <h2>📚 Türkçe - Genişletilmiş 5 Konu Modu</h2>
+            <label>Sınıfınızı Seçin:</label>
+            <select id="turkceGrade" onchange="resetAndLoad('turkce')">
+                <option value="5">5. Sınıf Türkçe</option>
+                <option value="6">6. Sınıf Türkçe</option>
+                <option value="7">7. Sınıf Türkçe</option>
+                <option value="8">8. Sınıf Türkçe (LGS)</option>
+            </select>
+            <div id="turkceCurriculum" class="curriculum-card"></div>
+            <div id="turkceContent" class="lesson-box"></div>
+        </div>
+
+        <!-- FEN DERSİ SEKMESİ -->
+        <div id="fenTab" class="tab-content">
+            <h2>🔬 Fen Bilimleri - Genişletilmiş 5 Konu Modu</h2>
+            <label>Sınıfınızı Seçin:</label>
+            <select id="fenGrade" onchange="resetAndLoad('fen')">
+                <option value="5">5. Sınıf Fen</option>
+                <option value="6">6. Sınıf Fen</option>
+                <option value="7" selected>7. Sınıf Fen</option>
+                <option value="8">8. Sınıf Fen (LGS)</option>
+            </select>
+            <div id="fenCurriculum" class="curriculum-card"></div>
+            <div id="fenContent" class="lesson-box"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // LİNKLER VE PROGRAM
+        let links = JSON.parse(localStorage.getItem('studyLinks')) || [];
+        function renderLinks() {
+            const list = document.getElementById('linkList');
+            list.innerHTML = '';
+            links.forEach((link, index) => {
+                list.innerHTML += `<li><a href="${link.url}" target="_blank">📺 ${link.title}</a><button class="delete-btn" onclick="deleteLink(${index})">Sil</button></li>`;
+            });
+        }
+        function addLink() {
+            const title = document.getElementById('linkTitle').value;
+            let url = document.getElementById('linkUrl').value;
+            if (!title || !url) return alert('Lütfen başlık ve link alanını doldur!');
+            if (!url.startsWith('http')) url = 'https://' + url;
+            links.push({ title, url });
+            localStorage.setItem('studyLinks', JSON.stringify(links));
+            document.getElementById('linkTitle').value = '';
+            document.getElementById('linkUrl').value = '';
+            renderLinks();
+        }
+        function deleteLink(i) {
+            links.splice(i, 1);
+            localStorage.setItem('studyLinks', JSON.stringify(links));
+            renderLinks();
+        }
+        renderLinks();
+
+        const savedSchedule = localStorage.getItem('studySchedule');
+        if (savedSchedule) document.getElementById('scheduleInput').value = savedSchedule;
+        function saveSchedule() {
+            localStorage.setItem('studySchedule', document.getElementById('scheduleInput').value);
+            const msg = document.getElementById('saveMsg');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 2000);
+        }
+
+        // RASTGELE MATEMATİK
+        let currentCorrectAnswer = null;
+        function generateMathQuestion() {
+            const grade = document.getElementById('gradeSelectRandom').value;
+            let question = "";
+            if (grade == '5') {
+                let a = Math.floor(Math.random() * 80) + 20, b = Math.floor(Math.random() * 80) + 20;
+                question = `${a} + ${b} = ?`; currentCorrectAnswer = a + b;
+            } else if (grade == '6') {
+                let a = Math.floor(Math.random() * 12) + 2, b = Math.floor(Math.random() * 12) + 2;
+                question = `${a} x ${b} = ?`; currentCorrectAnswer = a * b;
+            } else if (grade == '7') {
+                let a = Math.floor(Math.random() * 20) - 10, b = Math.floor(Math.random() * 20) - 10;
+                question = `(${a}) + (${b}) = ?`; currentCorrectAnswer = a + b;
+            } else if (grade == '8') {
+                let a = Math.floor(Math.random() * 12) + 1;
+                question = `${a}'nin karesi (${a}²) kaçtır?`; currentCorrectAnswer = a * a;
+            }
+            document.getElementById('questionText').innerText = question;
+            document.getElementById('mathAnswer').value = '';
+            document.getElementById('mathResult').innerText = '';
+        }
+
+        function checkMathAnswer() {
+            let userAnswer = parseInt(document.getElementById('mathAnswer').value);
+            const resultBox = document.getElementById('mathResult');
+            if (isNaN(userAnswer)) { resultBox.innerText = "Lütfen bir sayı gir!"; resultBox.style.color = "red"; return; }
+            if (userAnswer === currentCorrectAnswer) {
+                resultBox.innerText = "🎉 Doğru cevap, harikasın!"; resultBox.style.color = "green";
+            } else {
+                resultBox.innerText = `❌ Yanlış. Doğru cevap: ${currentCorrectAnswer} olacaktı.`; resultBox.style.color = "red";
+            }
+        }
+
+        // --- GENİŞLETİLMİŞ VE ÇOK DAHA AÇIKLAYICI MÜFREDAT LİSTESİ ---
+        const curriculumTopics = {
+            math: {
+                "5": ["Doğal Sayılarla Bölme İşlemi", "Kesirlerde Toplama ve Çıkarma", "Ondalık Gösterimlerin Çözümlenmesi", "Üçgenlerin Açılarına Göre İncelenmesi", "Zaman Ölçüleri Arasındaki Dönüşümler"],
+                "6": ["Çarpanlar, Katlar ve Asal Sayılar", "Kümelerde Birleşim ve Kesişim", "Tam Sayılarla Temel İşlemler", "Cebirsel İfadelerde Değer Bulma", "Veri Analizi ve Aritmetik Ortalama"],
+                "7": ["Rasyonel Sayılarla Çevirme ve Sıralama", "Yüzde Hesapları ve Kar-Zarar Problemleri", "Doğrular, Açılar ve Paralel Doğru Kuralları", "Çemberde Çevre ve Daire Alanı", "Geometrik Cisimlerde Hacim Bağıntıları"],
+                "8": ["Kareköklü İfadelerde Tam Kare ve Tahmin", "Özdeşlikler ve Çarpanlara Ayırma Yöntemleri", "Doğrusal Denklemler ve Eğim Kavramı", "Birinci Dereceden Eşitsizlikler", "Dönüşüm Geometrisi (Öteleme ve Yansıma)"]
+            },
+            turkce: {
+                "5": ["Sözcükte Gerçek, Mecaz ve Terim Anlam", "Deyimler ve Atasözlerinin Cümleye Katkısı", "Öznel ve Nesnel Anlatımlı Cümleler", "Neden-Sonuç ve Amaç-Sonuç İlişkileri", "Yazım Kuralları (De/Da ve Mi Ekleri)"],
+                "6": ["Cümleler Arası Anlam İlişkileri", "İsimlerin (Adların) Türleri ve Halleri", "Sıfatların (Ön Adların) Çeşitleri", "Zamirlerin (Adılların) Cümledeki Yeri", "Ünsüz Yumuşaması ve Ünsüz Benzeşmesi"],
+                "7": ["Fiillerde Kip ve Kişi Kayması Olayı", "Ek Fiilin Görevleri ve Çekimleri", "Zarfların (Belirteçlerin) Cümledeki İşlevi", "Anlatım Bozukluklarının Sebepleri", "Düşünceyi Geliştirme Yolları Teknikleri"],
+                "8": ["Fiilimsiler (İsim-Fiil, Sıfat-Fiil, Zarf-Fiil)", "Cümlenin Temel ve Yardımcı Ögeleri", "Yapısına Göre Cümle Çeşitleri", "Söz Sanatları (Benzetme, Kişileştirme)", "Grafik, Tablo ve Görsel Yorumlama Becerisi"]
+            },
+            fen: {
+                "5": ["Güneş ve Ay Tutulmasının Karşılaştırılması", "Mikroskobik Canlılar ve Mantarların Dünyası", "Kuvvetin Ölçülmesi ve Dinamometreler", "Maddenin Hal Değişimi Isı Alışverişi", "Işığın Düzgün ve Dağınık Yansıması"],
+                "6": ["Güneş Sistemi, Gezegenler ve Ötesi", "Vücudumuzdaki Sistemler (Sindirim)", "Destek ve Hareket Sistemi Organları", "Sabit Süratli Hareket Hesaplamaları", "Sesin Farklı Ortamlarda Yayılması"],
+                "7": ["Hücrenin Yapısı ve Mitoz Bölünme Evreleri", "Kütle ile Ağırlığın Temel Farkları", "Kinetik ve Potansiyel Enerji Dönüşümleri", "Saf Maddeler, Karışımlar ve Çözeltiler", "Işığın Kırılması ve Mercekler"],
+                "8": ["Mevsimlerin Oluşumu ve Eksen Eğikliği", "DNA, Genetik Kod ve Nükleotit Yapısı", "Katı ve Sıvı Basıncını Etkileyen Faktörler", "Asitler, Bazlar ve pH Skalası", "Basit Makineler ve İş Kolaylığı İlkesi"]
+            }
+        };
+
+        // --- ÇOK DAHA DETAYLI VE AÇIKLAYICI VERİTABANI ---
+        const uniqueTopicDatabase = {
+            // MATEMATİK 5
+            "Doğal Sayılarla Bölme İşlemi": { 
+                note: "Bölme işlemi, bir bütünün eş parçalara kaç kez ayrıldığını bulmamızı sağlar. Formülümüz: Bölünen = (Bölen x Bölüm) + Kalan şeklindedir. Burada en kritik kural, kalanın her zaman bölen sayıdan kesinlikle küçük olması gerektiğidir.", 
+                tip: "Eğer kalan, bölenden büyük veya eşit çıkarsa yaptığınız bölme işlemi yanlıştır, kalanı tekrar bölmeniz gerekir.", 
+                q: "Bir bölme işleminde bölen 8, bölüm 12 ve kalan 5 ise, bölünen sayı kaçtır?", 
+                a: "101" 
+            },
+            "Kesirlerde Toplama ve Çıkarma": { 
+                note: "Kesirlerle toplama veya çıkarma işlemi yapabilmek için paydaların mutlaka eşit olması şarttır. Paydalar eşitse, paylar kendi arasında toplanır veya çıkarılır, ortak payda ise sonucun paydasına aynen yazılır.", 
+                tip: "Paydalar farklıysa önce genişletme veya sadeleştirme yapılarak paydalar eşitlenmelidir.", 
+                q: "1/3 ile 1/6 kesirlerinin toplamı en sade halinde payı kaç olur? (Örn: 1/2 ise 1 yazın)", 
+                a: "1" 
+            },
+            "Ondalık Gösterimlerin Çözümlenmesi": { 
+                note: "Ondalık sayılarda virgülün sol tarafı tam kısım, sağ tarafı ise kesir (ondalık) kısmıdır. Basamak değerleri sağa doğru onda birler, yüzde birler ve binde birler şeklinde 10'un negatif kuvvetleri olarak küçülür.", 
+                tip: "Çözümleme yaparken her basamak, o basamağın basamak değeri ile çarpılarak toplanır.", 
+                q: "3,45 ondalık gösteriminde onda birler basamağındaki rakam kaçtır?", 
+                a: "4" 
+            },
+            "Üçgenlerin Açılarına Göre İncelenmesi": { 
+                note: "Üçgenler açılarına göre üç gruba ayrılır: Dar açılı üçgenlerin tüm açıları 90 dereceden küçüktür. Dik açılı üçgende bir açı tam 90 derecedir. Geniş açılı üçgende ise bir açı 90 dereceden büyüktür.", 
+                tip: "Her çeşit üçgenin iç açılarının ölçüleri toplamı daima ve istisnasız 180 derecedir.", 
+                q: "Bir dik üçgenin dar açılarından biri 40 derece ise, diğer dar açısı kaç derecedir?", 
+                a: "50" 
+            },
+            "Zaman Ölçüleri Arasındaki Dönüşümler": { 
+                note: "Zaman problemlerinde birimler arası geçişler yapılırken 60'lık sistem kullanılır. 1 saat 60 dakika, 1 dakika ise 60 saniyedir. Gün hesaplarında ise 1 günün 24 saat olduğu unutulmamalıdır.", 
+                tip: "Büyük birimden küçük birime geçerken çarpma, küçük birimden büyük birime geçerken bölme yapılır.", 
+                q: "180 dakika kaç saate eşittir?", 
+                a: "3" 
+            },
+
+            // MATEMATİK 6
+            "Çarpanlar, Katlar ve Asal Sayılar": { 
+                note: "Bir doğal sayıyı kalansız bölen her sayı o sayının çarpanı (böleni) demektir. 1'den ve kendisinden başka hiçbir pozitif böleni olmayan 2, 3, 5, 7 gibi sayılara ise asal sayı denir.", 
+                tip: "En küçük ve tek çift asal sayı 2'dir. 1 sayısı asal sayı değildir.", 
+                q: "10'dan küçük kaç tane asal sayı vardır?", 
+                a: "4" 
+            },
+            "Kümelerde Birleşim ve Kesişim": { 
+                note: "İki kümenin ortak elemanlarından oluşan yeni kümeye kesişim kümesi (∩) denir. İki kümenin tüm elemanlarının bir araya gelmesiyle oluşan yapıya ise birleşim kümesi (∪) adı verilir.", 
+                tip: "Birleşim işleminde ortak elemanlar kümeye sadece bir kez yazılır, asla iki kez yazılmaz.", 
+                q: "A = {1, 2} ve B = {2, 3} kümelerinin birleşim kümesinin eleman sayısı kaçtır?", 
+                a: "3" 
+            },
+            "Tam Sayılarla Temel İşlemler": { 
+                note: "Tam sayılar, negatif ve pozitif yönlü sayıları sıfır ile birlikte kapsayan Z kümesidir. Aynı işaretli iki tam sayı toplanırken işaret aynen kalır, zıt işaretli sayılarda ise büyükten küçük çıkarılıp büyüğün işareti yazılır.", 
+                tip: "Çarpma ve bölmede: Aynı işaretlerin çarpımı artı (+), zıt işaretlerin çarpımı eksi (-) eder.", 
+                q: "(-5) x (-4) işleminin sonucu kaçtır?", 
+                a: "20" 
+            },
+            "Cebirsel İfadelerde Değer Bulma": { 
+                note: "İçerisinde en az bir bilinmeyen (harf) bulunduran ifadeler cebirsel ifadelerdir. Harfli ifadelere verilen sayısal değerler yerine konularak işlem önceliği kurallarına göre sonuç hesaplanır.", 
+                tip: "Katsayı, harfin önünde bulunan ve onun kaç katı olduğunu gösteren sayısal değerdir.", 
+                q: "4x + 3 cebirsel ifadesinde x yerine 5 yazıldığında sonuç kaç olur?", 
+                a: "23" 
+            },
+            "Veri Analizi ve Aritmetik Ortalama": { 
+                note: "Bir veri grubundaki tüm sayıların toplanması ve elde edilen toplamın toplam veri adetine bölünmesiyle aritmetik ortalama elde edilir. Grafik yorumlamada artış ve azalış trendlerine dikkat edilir.", 
+                tip: "Veri grubundaki sayılar değiştiğinde toplam da değişeceği için ortalama yeniden hesaplanmalıdır.", 
+                q: "10, 20, 30 ve 40 sayısal verilerinin aritmetik ortalaması kaçtır?", 
+                a: "25" 
+            },
+
+            // MATEMATİK 7
+            "Rasyonel Sayılarla Çevirme ve Sıralama": { 
+                note: "a/b biçiminde yazılabilen ve b sıfırdan farklı olan sayılar rasyonel sayıdır. Negatif rasyonel sayılarda sıralama yapılırken sanki pozitifmiş gibi düşünüp, sayı doğrusundaki yön nedeniyle tam tersi değerlendirilir.", 
+                tip: "Paydaları eşit olan pozitif rasyonel sayılarda payı büyük olan daha büyüktür.", 
+                q: "1/2 kesrinin ondalık gösterimi nedir? (Virgülden sonra tek hane yazın, örn: 0.5 ise 5 yazın)", 
+                a: "0.5" 
+            },
+            "Yüzde Hesapları ve Kar-Zarar Problemleri": { 
+                note: "Bir çokluğun yüzde x'i, o çokluğun x ile çarpılıp yüze bölünmesiyle bulunur. Ticari problemlerde alış fiyatı üzerine eklenen miktar kâr, düşülen miktar ise zarar oranını belirler.", 
+                tip: "İndirim sorularında oran ana fiyattan çıkarılır, zamlı sorularda ise ana fiyata eklenir.", 
+                q: "300 TL'lik bir ürüne %10 indirim yapılırsa indirimli fiyatı kaç TL olur?", 
+                a: "270" 
+            },
+            "Doğrular, Açılar ve Paralel Doğru Kuralları": { 
+                note: "İki paralel doğrunun bir kesenle yaptığı açılarda Z kuralı (iç ters), U kuralı (karşı durumlu) ve F kuralı (yöndeş) en temel kurallardır. Tümler açıların toplamı 90, bütünler açıların toplamı 180 derecedir.", 
+                tip: "U kuralında karşılıklı açılar toplamı daima 180 dereceye eşittir.", 
+                q: "Bütünler iki açıdan biri 100 derece ise diğer açının ölçüsü kaç derecedir?", 
+                a: "80" 
+            },
+            "Çemberde Çevre ve Daire Alanı": { 
+                note: "Çemberin uzunluğu Ç = 2 * pi * r formülü ile, içinde kalan alan ise Daire Alanı = pi * r² formülüyle hesaplanır. Pi sayısı genellikle sorularda 3 veya 3,14 olarak alınır.", 
+                tip: "Çevrede yarıçap (r) 1 kez çarpılırken, alanda yarıçapın karesi (r²) alınır.", 
+                q: "Yarıçapı 5 cm olan ve pi=3 alınan bir dairenin alanı kaç cm²'dir?", 
+                a: "75" 
+            },
+            "Geometrik Cisimlerde Hacim Bağıntıları": { 
+                note: "Prizmaların genel hacim formülü Taban Alanı x Yükseklik şeklindedir. Küp ve dikdörtgenler prizması bu kuralın en temel ve yaygın uygulama alanlarını oluşturur.", 
+                tip: "Hacim hesaplanırken tüm uzunluk birimlerinin aynı cins (cm veya m) olmasına dikkat edilmelidir.", 
+                q: "Ayrıntıları 2 cm, 3 cm ve 5 cm olan dikdörtgenler prizmasının hacmi kaç cm³'tür?", 
+                a: "30" 
+            },
+
+            // MATEMATİK 8
+            "Kareköklü İfadelerde Tam Kare ve Tahmin": { 
+                note: "Hangi sayının kendisiyle çarpımının o sonucu verdiğini bulma işlemi karekök almadır. Tam kare olmayan kareköklü ifadelerin hangi iki tam sayı arasında olduğu tahmin edilirken en yakın tam kareler kullanılır.", 
+                tip: "Kök dışına çıkarma yapırken sayı çarpanlarına ayrılır ve tam kare olanlar dışarı çıkar.", 
+                q: "√64 sayısı dışarı hangi tam sayı olarak çıkar?", 
+                a: "8" 
+            },
+            "Özdeşlikler ve Çarpanlara Ayırma Yöntemleri": { 
+                note: "Cebirsel ifadelerde harflerin alacağı her değer için geçerli olan eşitliklere özdeşlik denir. İki kare farkı (a² - b² = (a-b)(a+b)) ve tam kare özdeşlikleri en çok kullanılan kalıplardır.", 
+                tip: "Tam kare açılımlarında birinci ile ikincinin çarpımının iki katı terimi asla unutulmamalıdır.", 
+                q: "(x + 4)² özdeşliğinde ortanca terimin katsayısı kaçtır?", 
+                a: "8" 
+            },
+            "Doğrusal Denklemler ve Eğim Kavramı": { 
+                note: "Grafiği koordinat sisteminde bir doğru belirten denklemlere doğrusal denklem denir (y = mx + n). Buradaki m harfi doğrunun eğimini, yani dikliğin yataya oranını ifade eder.", 
+                tip: "Eğim hesaplanırken dikey uzunluk yatay uzunluğa bölünür; sağa yatık doğrular pozitif eğimlidir.", 
+                q: "y = 3x - 5 doğrusunun eğimi kaçtır?", 
+                a: "3" 
+            },
+            "Birinci Dereceden Eşitsizlikler": { 
+                note: "İçinde büyüktür (>), küçüktür (<), büyük eşit veya küçük eşit simgeleri barındıran ifadelerdir. Denklemlere benzer şekilde çözülür ancak çok önemli bir kuralı vardır.", 
+                tip: "Eşitsizlikte her iki taraf negatif bir sayıya bölünür veya çarpılırsa eşitsizlik yön değiştirir.", 
+                q: "x - 3 < 5 eşitsizliğini sağlayan en büyük tam sayı değeri kaçtır?", 
+                a: "7" 
+            },
+            "Dönüşüm Geometrisi (Öteleme ve Yansıma)": { 
+                note: "Geometrik şekillerin yer değiştirmesi öteleme, bir eksene göre simetriğinin alınması ise yansıma olarak adlandırılır. Yansımada şekil aynadaki gibi ters döner.", 
+                tip: "Koordinat düzleminde y eksenine göre yansımada x koordinatı işaret değiştirir.", 
+                q: "Koordinat sistemindeki (2, 3) noktasının x eksenine göre yansımasında y bileşeni kaç olur?", 
+                a: "-3" 
+            },
+
+            // TÜRKÇE 5
+            "Sözcükte Gerçek, Mecaz dan Terim Anlam": { 
+                note: "Kelimenin akla gelen ilk, somut anlamı gerçek anlamdır. Gerçek anlamdan tamamen koparak kazanılan soyut anlam mecaz anlam; bilim, sanat veya spor dalıyla ilgili özel anlam ise terim anlamdır.", 
+                tip: "Terim anlamlı sözcükler genellikle matematik, müzik veya tiyatro gibi alanlara özgüdür.", 
+                q: "'Oyunun ikinci perdesi başladı' cümlesinde 'perde' kelimesi hangi anlamda kullanılmıştır?", 
+                a: "terim anlam" 
+            },
+            "Deyimler ve Atasözlerinin Cümleye Katkısı": { 
+                note: "Deyimler genellikle mastar halinde anlatımı çekici kılan kalıplardır; atasözleri ise yüzyılların deneyimini aktaran öğüt verici kalıplaşmış cümlelerdir.", 
+                tip: "Atasözleri genel yargı bildirirken deyimler durum veya duygu bildirir.", 
+                q: "'Çam devirmek' deyimi hangi anlama gelir? (Yanlışlık yapmak anlamında kısaca 'gaf yapmak' veya 'pot kırmak' yazabilirsiniz, örn: pot kırmak)", 
+                a: "pot kırmak" 
+            },
+            "Öznel ve Nesnel Anlatımlı Cümleler": { 
+                note: "Söyleyenin kişisel görüşlerini içeren, kanıtlanamayan yargılar öznel; herkesçe kabul gören, bilimsel veya belgelenebilir yargılar ise nesnel anlatımlıdır.", 
+                tip: "Nesnel cümlelerde 'bana göre, bence' gibi ifadeler kullanılamaz.", 
+                q: "'Filmde harika oyunculuklar vardı' cümlesi öznel mi yoksa nesnel midir?", 
+                a: "öznel" 
+            },
+            "Neden-Sonuç ve Amaç-Sonuç İlişkileri": { 
+                note: "Bir eylemin hangi gerekçeyle gerçekleştiğini bildiren cümleler neden-sonuç, hangi niyetle (hedefle) yapıldığını bildirenler ise amaç-sonuç cümleleridir.", 
+                tip: "Amaç-sonuç cümlelerinde 'amacıyla' kelimesi cümlene uyuyorken neden-sonuçta uymaz.", 
+                q: "'Sınavı kazanmak için çok çalıştı' cümlesinde anlam ilişkisi neden-sonuç mu amaç-sonuç mu?", 
+                a: "amaç sonuç" 
+            },
+            "Yazım Kuralları (De/Da ve Mi Ekleri)": { 
+                note: "Bağlaç olan da/de ayrı yazılır ve cümleden çıkarıldığında anlam bozulmaz. Soru eki olan mi/mı her zaman kendinden önceki kelimeden ayrı yazılır.", 
+                tip: "Hal eki olan -da/-de kelimeye bitişik yazılır ve cümleden çıkarılırsa anlam daralır veya bozulur.", 
+                q: "'Sen de bizimle gel' cümlesindeki 'de' doğru mu yazılmıştır?", 
+                a: "evet" 
+            },
+
+            // TÜRKÇE 6
+            "Cümleler Arası Anlam İlişkileri": { 
+                note: "Cümleler arasında koşul-sonuç, karşılaştırma, aşamalı durum ve benzetme gibi çeşitli anlam bağlantıları kurulur. Koşul cümlelerinde bir durumun gerçekleşmesi başka bir şarta bağlıdır.", 
+                tip: "Karşılaştırma cümlelerinde en az iki varlık veya durumun benzer ya da farklı yönleri kıyaslanır.", 
+                q: "'Hava sıcaklığı her geçen gün artıyor' cümlesi hangi anlam ilişkisini verir?", 
+                a: "aşamalı durum" 
+            },
+            "İsimlerin (Adların) Türleri ve Halleri": { 
+                note: "Varlıklara verilişlerine göre cins ve özel isimler; sayılarına göre tekil, çoğul ve topluluk isimleri olarak incelenir. İsimler yalın, belirtme, yönelme, bulunma ve ayrılma hallerini alır.", 
+                tip: "Topluluk isimleri çoğul eki almadıkları halde şekil olarak birden çok varlığı temsil eder.", 
+                q: "'Ordu' kelimesi tür bakımından hangi isim grubuna girer?", 
+                a: "topluluk ismi" 
+            },
+            "Sıfatların (Ön Adların) Çeşitleri": { 
+                note: "İsimlerden önce gelerek onları niteleyen veya işaret, sayı, belgisiz, soru yönlerinden belirten sözcük gruplarıdır. Niteleme sıfatları isme sorulan 'Nasıl?' sorusunun yanıtıdır.", 
+                tip: "İsimle sıfatın arasına başka türde bir kelime girebilir, sıfatlar tek başına isim olmadan da kullanılabilir.", 
+                q: "'Kırmızı kalem' tamlamasında 'kırmızı' sözcüğü hangi sıfat türüdür?", 
+                a: "niteleme sıfatı" 
+            },
+            "Zamirlerin (Adılların) Cümledeki Yeri": { 
+                note: "İsimlerin yerini tutan sözcükciklerdir. Kişi zamirleri (ben, sen, o), işaret zamirleri (bu, şu, o), belgisiz zamirler (biri, herkes) ve soru zamirleri (kim, ne) olarak sınıflandırılır.", 
+                tip: "'O' zamiri hem insan yerini tutarsa kişi, cansız varlık yerini tutarsa işaret zamiri olur.", 
+                q: "'Herkes dışarı çıktı' cümlesindeki 'herkes' kelimesi hangi zamir türüdür?", 
+                a: "belgisiz zamir" 
+            },
+            "Ünsüz Yumuşaması ve Ünsüz Benzeşmesi": { 
+                note: "P, ç, t, k sert ünsüzleriyle biten bir kelimeye ünlü ek geldiğinde b, c, d, g/ğ seslerine dönüşmesine ünsüz yumuşaması denir. Sert ünsüzlerin yan yana gelmesi ise benzeşmedir.", 
+                tip: "Tek heceli bazı sözcüklerde (ip, sac vb.) ünsüz yumuşaması kuralı istisnai olarak aranmaz.", 
+                q: "'Dolap' kelimesine -a yönelme eki geldiğinde kelime nasıl yazılır?", 
+                a: "dolaba" 
+            },
+
+            // TÜRKÇE 7
+            "Fiillerde Kip ve Kişi Kayması Olayı": { 
+                note: "Fiillerde bir kip ekinin kendi anlamı dışında başka bir zaman ya da kip yerine kullanılmasına anlam (kip) kayması denir. Bu durum anlatım bozukluğu yaratmaz.", 
+                tip: "Kip kaymalarında genellikle 'her gün, yarın, dün' gibi zaman zarfları ipucu verir.", 
+                q: "'Annemler yarın köye gidiyor' cümlesinde hangi kipte anlam kayması olmuştur?", 
+                a: "şimdiki zaman" 
+            },
+            "Ek Fiilin Görevleri ve Çekimleri": { 
+                note: "Ek fiil (ek eylem), isim öbeklerini yüklem yapmak veya çekimli fiillere gelerek birleşik zamanlı eylem oluşturmak olmak üzere iki temel göreve sahiptir (-idi, -imiş, -ise, -dir).", 
+                tip: "Ek fiilin olumsuzu 'değil' sözcüğüyle yapılır.", 
+                q: "'Evimiz çok güzeldi' cümlesindeki ek fiilin olumlusu hangi ekle sağlanmıştır?", 
+                a: "idi" 
+            },
+            "Zarfların (Belirteçlerin) Cümledeki İşlevi": { 
+                note: "Fiilleri, fiilimsileri, sıfatları ya da kendi türünden sözcükleri durum, zaman, yer-yön, miktar ve soru yönünden etkileyen sözcüklerdir.", 
+                tip: "Zarflar fiile sorulan 'Nasıl, Ne zaman, Ne kadar, Nereye' sorularına yanıt verir.", 
+                q: "'Çocuk hızlı koştu' cümlesinde 'hızlı' sözcüğü hangi zarf türüne girer?", 
+                a: "durum zarfı" 
+            },
+            "Anlatım Bozukluklarının Sebepleri": { 
+                note: "Cümlelerin anlamca duru olmaması, gereksiz sözcük kullanımı, çelişen sözlerin bir arada bulunması veya öge eksiklikleri anlatım bozukluğuna yol açar.", 
+                tip: "Bir sözcüğün eş anlamlısının aynı cümlede kullanılması gereksiz sözcük hatası doğurur.", 
+                q: "'Karşılıklı mektuplaştılar' cümlesinde hangi tür anlatım bozukluğu vardır?", 
+                a: "gereksiz sözcük" 
+            },
+            "Düşünceyi Geliştirme Yolları Teknikleri": { 
+                note: "Yazıdaki düşünceyi inandırıcı kılmak için tanımlama, örnekleme, karşılaştırma, tanık gösterme ve sayısal verilerden yararlanma yolları tercih edilir.", 
+                tip: "Tanımlama 'Bu kavram nedir?' sorusuna doğrudan yanıt verir.", 
+                q: "Metinde yazarın kendi düşüncesini kanıtlamak için ünlü birinin sözünü alıntılamasına ne denir?", 
+                a: "tanık gösterme" 
+            },
+
+            // TÜRKÇE 8
+            "Fiilimsiler (İsim-Fiil, Sıfat-Fiil, Zarf-Fiil)": { 
+                note: "Fiil kök veya gövdelerinden türeyen ancak cümlede isim, sıfat veya zarf görevinde kullanılan eylemsilerdir. Üç ana gruba ayrılırlar: İsim-fiil (ma, ış, mak), sıfat-fiil (an, ası, mez, ar, dik, ecek, miş), zarf-fiil.", 
+                tip: "Fiilimsiler olumsuzluk eki (-ma/-me) alabilirler ancak kip eklerini alamazlar.", 
+                q: "'Gideli' sözcüğü fiilimsi türlerinden hangisidir?", 
+                a: "zarf fiil" 
+            },
+            "Cümlenin Temel ve Yardımcı Ögeleri": { 
+                note: "Cümlenin yapı taşları olan temel ögeler özne ve yüklemdir. Nesne, yer tamlayıcısı (dolaylı tümleç) ve zarf tamlayıcısı ise cümleyi zenginleştiren yardımcı ögelerdir.", 
+                tip: "Öge bulurken önce kesinlikle yüklem bulunur, ardından sorular yükleme yöneltilir.", 
+                q: "'Kitabı masaya bıraktı' cümlesinde 'masaya' sözcüğü hangi ögedir?", 
+                a: "yer tamlayıcısı" 
+            },
+            "Yapısına Göre Cümle Çeşitleri": { 
+                note: "Cümleler yapılarına göre basit, birleşik, sıralı ve bağlı cümleler olarak dörde ayrılır. İçinde fiilimsi barındıran cümleler yapıca girişik birleşik cümlelerdir.", 
+                tip: "Yüklemi çekimli bir fiil olan cümlelere fiil cümlesi denir.", 
+                q: "Tek bir yargı bildiren ve içinde fiilimsi olmayan cümleler hangi yapıdadır?", 
+                a: "basit cümle" 
+            },
+            "Söz Sanatları (Benzetme, Kişileştirme)": { 
+                note: "Anlatımı pekiştirmek için benzetme (teşbih), kişileştirme (teşhis), konuşturma (intak) ve abartma (mübalağa) sanatlarına başvurulur.", 
+                tip: "İnsana ait özelliklerin doğadaki hayvan veya bitkilere verilmesi kişileştirme sanatıdır.", 
+                q: "Rüzgarın inlemesi hangi söz sanatına örnek oluşturur?", 
+                a: "kişileştirme" 
+            },
+            "Grafik, Tablo ve Görsel Yorumlama Becerisi": { 
+                note: "Sayısal verilerin sütun, çizgi veya daire grafikleriyle aktarıldığı bilgileri mantıksal süzgeçten geçirip yorumlama gücüdür.", 
+                tip: "Grafik sorularında en yüksek ve en düşük değerler çözüme giden en net ipuçlarıdır.", 
+                q: "Daire grafiğinde tamamı gösterilen bir verinin bütünü yüzde kaçı ifade eder?", 
+                a: "100" 
+            },
+
+            // FEN 5
+            "Güneş ve Ay Tutulmasının Karşılaştırılması": { 
+                note: "Güneş tutulmasında Ay, Güneş ile Dünya'nın arasındadır ve gündüz görülür. Ay tutulmasında ise Dünya, Güneş ile Ay'ın arasındadır ve gece gözlemlenir.", 
+                tip: "Güneş tutulmasına çıplak gözle bakmak göz sağlığı açısından son derece tehlikelidir.", 
+                q: "Ay tutulması olayında hangi gök cismi tam ortada yer alır?", 
+                a: "dünya" 
+            },
+            "Mikroskobik Canlılar ve Mantarların Dünyası": { 
+                note: "Bakteriler ve amip gibi canlılar mikroskobik canlılardır; sütten yoğurt yapımı veya hamurun mayalanmasında rol oynarlar. Mantarlar ise şapkalı, küf ve maya mantarları olarak ayrılır.", 
+                tip: "Bütün mantarlar yenmez, bazı şapkalı mantarlar son derece zehirlidir.", 
+                q: "Sütten yoğurt elde edilmesini sağlayan mikroskobik canlı hangisidir?", 
+                a: "bakteri" 
+            },
+            "Kuvvetin Ölçülmesi ve Dinamometreler": { 
+                note: "Kuvvet, dinamometre adı verilen ve içinde esnek yaylar bulunduran araçlarla ölçülür. Kuvvetin uluslararası birimi Newton'dur ve büyük 'N' harfiyle gösterilir.", 
+                tip: "Dinamometrenin yapısındaki yayın esneklik sınırının aşılması aleti bozar.", 
+                q: "Kuvveti ölçmeye yarayan aracın adı nedir?", 
+                a: "dinamometre" 
+            },
+            "Maddenin Hal Değişimi Isı Alışverişi": { 
+                note: "Maddelerin katı, sıvı ve gaz halleri arasında ısı alarak veya vererek geçiş yapmasına hal değişimi denir. Katıdan sıvıya geçiş erime, sıvıdan gaza geçiş ise buharlaşmadır.", 
+                tip: "Erime ve donma sıcaklıkları saf maddeler için ayırt edici özelliklerdir.", 
+                q: "Sıvı haldeki bir maddenin ısı alarak gaz haline geçmesine ne ad verilir?", 
+                a: "buharlaşma" 
+            },
+            "Işığın Düzgün ve Dağınık Yansıması": { 
+                note: "Işığın pürüzsüz yüzeylerden belli bir kurala göre geri dönmesine düzgün yansıma, pürüzlü yüzeylerden ise her açıya dağılarak yansımasına dağınık yansıma denir.", 
+                tip: "Düzgün yansımada gelme açısı her zaman yansıma açısına eşittir.", 
+                q: "Gelme açısı 40 derece olan bir ışının yansıma açısı kaç derecedir?", 
+                a: "40" 
+            },
+
+            // FEN 6
+            "Güneş Sistemi, Gezegenler ve Ötesi": { 
+                note: "Güneş sisteminde güneşe yakınlık sırasıyla 8 gezegen bulunur. Merkür, Venüs, Dünya, Mars iç (karasal) gezegenler; Jüpiter, Satürn, Uranüs, Neptün ise dış (gaz devleri) gezegenlerdir.", 
+                tip: "Güneş sisteminin en büyük gezegeni Jüpiter'dir.", 
+                q: "Güneş sisteminde güneşe en yakın olan ilk gezegen hangisidir?", 
+                a: "merkür" 
+            },
+            "Vücudumuzdaki Sistemler (Sindirim)": { 
+                note: "Besinlerin vücutta kullanılabilir hale gelmesi için küçük parçalara ayrılmasına sindirim denir. Fiziksel ve kimyasal sindirim olarak ikiye ayrılır.", 
+                tip: "Besinlerin kimyasal sindirimi karbonhidratlar için ağızda başlar.", 
+                q: "Besinlerin kana geçtiği (emilimin en yoğun olduğu) sindirim organı hangisidir?", 
+                a: "ince bağırsak" 
+            },
+            "Destek ve Hareket Sistemi Organları": { 
+                note: "İskeletimiz kemiklerden, eklemlerden ve kıkırdaktan meydana gelir. Oynar, yarı oynar ve oynamaz olmak üzere üç çeşit eklem yapımız vardır.", 
+                tip: "Kafatası kemikleri arasındaki eklemler hareket etmeyen oynamaz eklem türüdür.", 
+                q: "Kollarda ve bacaklarda bulunan, hareket yeteneği en fazla olan eklem çeşidi nedir?", 
+                a: "oynar eklem" 
+            },
+            "Sabit Süratli Hareket Hesaplamaları": { 
+                note: "Birim zamanda kat edilen yol miktarına sürat denir. Formülü Sürat = Yol / Zaman (V = x / t) şeklindedir. Birimi metre/saniye veya kilometre/saattir.", 
+                tip: "Yol birimi metre, zaman saniye alındığında sürat birimi m/s çıkar.", 
+                q: "120 metrelik yolu 10 saniyede alan bir aracın sürati kaç m/s'dir?", 
+                a: "12" 
+            },
+            "Sesin Farklı Ortamlarda Yayılması": { 
+                note: "Ses, maddesel ortamlarda dalgalar halinde yayılan bir enerjidir ve boşlukta kesinlikle yayılmaz. Ses en hızlı katı, en yavaş ise gaz ortamlarda iletilir.", 
+                tip: "Sıcaklık arttıkça sesin yayılma hızı da buna bağlı olarak artar.", 
+                q: "Ses en hızlı hangi haldeki maddede yayılır?", 
+                a: "katı" 
+            },
+
+            // FEN 7
+            "Hücrenin Yapısı ve Mitoz Bölünme Evreleri": { 
+                note: "Canlıların temel yapı birimi hücredir. Vücut hücrelerinde görülen mitoz bölünme sonucunda kromozom sayısı değişmeden kalıtsal olarak aynısı 2 yeni hücre meydana gelir.", 
+                tip: "Mitoz bölünme çok hücreli canlılarda büyüme, gelişme ve yaraların onarılmasını sağlar.", 
+                q: "İnsan vücudunda mitoz geçiren bir hücrenin kromozom sayısı yarıya inermi?", 
+                a: "hayır" 
+            },
+            "Kütle ile Ağırlığın Temel Farkları": { 
+                note: "Kütle değişmeyen madde miktarıdır ve eşit kollu terazi ile ölçülür. Ağırlık ise cütleye etki eden yerçekimi kuvvetidir ve dinamometre ile ölçülür.", 
+                tip: "Kütle dünyanın her yerinde aynıdır ancak ağırlık bulunulan gezegenin yerçekimine göre değişir.", 
+                q: "Kütlenin uluslararası standart birimi kısaca ne olarak ifade edilir?", 
+                a: "kilogram" 
+            },
+            "Kinetik ve Potansiyel Enerji Dönüşümleri": { 
+                note: "Hareket halindeki cisimlerin sahip olduğu enerji kinetik enerji; yükseklik veya konumdan dolayı sahip olunan enerji ise çekim potansiyel enerjisidir.", 
+                tip: "Yerden yukarı doğru çıkarılan bir cismin potansiyel enerjisi artarken kinetik enerjisi azalır.", 
+                q: "Hızlanmakta olan bir aracın sahip olduğu hareket enerjisi türü nedir?", 
+                a: "kinetik enerji" 
+            },
+            "Saf Maddeler, Karışımlar ve Çözeltiler": { 
+                note: "Element ve bileşikler saf maddelerdir. Birden fazla saf maddenin kimyasal özellikleri bozulmadan bir araya gelmesiyle oluşan yapılar ise karışım (homojen/heterojen) adını alır.", 
+                tip: "Tuzlu su, her yerinde aynı özelli gösteren homojen bir karışım yani çözeltidir.", 
+                q: "Çay şekerinin suda tamamen çözünmesiyle oluşan karışım türü nedir?", 
+                a: "homojen karışım" 
+            },
+            "Işığın Kırılması ve Mercekler": { 
+                note: "Işığın yoğunlukları farklı saydam ortamlardan geçerken doğrultu değiştirmesine kırılma denir. İnce kenarlı mercekler ışığı bir noktada toplarken, kalın kenarlı mercekler dağıtır.", 
+                tip: "Çok yoğun ortamdan az yoğun ortama geçen ışık normalden uzaklaşarak kırılır.", 
+                q: "Işığı bir noktada toplama özelliğine sahip olan mercek türü hangisidir?", 
+                a: "ince kenarlı mercek" 
+            },
+
+            // FEN 8
+            "Mevsimlerin Oluşumu ve Eksen Eğikliği": { 
+                note: "Dünya'nın Güneş etrafındaki dolanma hareketi ve 23 derece 27 dakikalık eksen eğikliği mevsimlerin oluşumundaki temel iki etmendir.", 
+                tip: "21 Haziran tarihinde Kuzey Yarım Küre'de en uzun gündüz ve yaz mevsimi başlar.", 
+                q: "Dünya'nın dönme eksenindeki eğiklik açısı kaç derecedir?", 
+                a: "23.5 derece" 
+            },
+            "DNA, Genetik Kod ve Nükleotit Yapısı": { 
+                note: "DNA'nın yönetici molekül yapısının temel birimi nükleotittir. Nükleotit fosfat, şeker ve organik bazdan (Adenin, Timin, Guanin, Sitozin) oluşur.", 
+                tip: "DNA'da her zaman Adenin nükleotiti Timin ile, Guanin ise Sitozin ile eşleşir.", 
+                q: "Adenin nükleotitinin karşısına hangi organik baz gelir?", 
+                a: "timin" 
+            },
+            "Katı ve Sıvı Basıncını Etkileyen Faktörler": { 
+                note: "Katı basıncı uygulanan kuvvetle doğru, temas edilen yüzey alanı ile ters orantılıdır. Sıvı basıncı ise sıvının derinliği ve yoğunluğu arttıkça doğru orantılı olarak artar.", 
+                tip: "Sıvı basıncı kabın şekline veya tabandaki sıvı miktarına bağlı değildir.", 
+                q: "Sıvı basıncını hesaplarken dikkate alınan iki temel faktör derinlik ve nedir?", 
+                a: "yoğunluk" 
+            },
+            "Asitler, Bazlar ve pH Skalası": { 
+                note: "pH skalasında 0 ile 7 arası asit, 7 ile 14 arası bazları gösterir. Asitler turnusol kağıdını kırmızıya çevirirken, bazlar maviyer rengine dönüştürür.", 
+                tip: "Asitler tahriş edici ve ekşiyken, bazlar ele kayganlık hissi verir ve tadı acıdır.", 
+                q: "pH değeri 3 olan bir madde asit mi yoksa baz mıdır?", 
+                a: "asit" 
+            },
+            "Basit Makineler ve İş Kolaylığı İlkesi": { 
+                note: "Kaldıraçlar, makaralar, eğik düzlem ve dişliler günlük hayatta iş kolaylığı sağlayan basit makinelerdir.", 
+                tip: "Hiçbir basit makine yoldan ve enerjiden aynı anda kazanç sağlayamaz, sadece iş kolaylığı sunar.", 
+                q: "Kaldıraç sistemlerinde desteğin ortada olduğu sistem kaçıncı tür kaldıraçtır?", 
+                a: "1. tür" 
+            }
+        };
+
+        let currentPage = { math: 0, turkce: 0, fen: 0 };
+
+        function openTab(tabId) {
+            stopSpeech();
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if(tabId === 'mathRandomTab') generateMathQuestion();
+            if(tabId === 'mathNotesTab') resetAndLoad('math');
+            if(tabId === 'turkceTab') resetAndLoad('turkce');
+            if(tabId === 'fenTab') resetAndLoad('fen');
+        }
+
+        function resetAndLoad(type) {
+            stopSpeech();
+            currentPage[type] = 0;
+            renderSubject(type);
+        }
+
+        function renderSubject(type) {
+            stopSpeech();
+            const grade = document.getElementById(type + 'Grade').value;
+            const topics = curriculumTopics[type][grade];
+            const totalLessons = topics.length;
+            
+            let currHtml = `<h4>📋 ${grade}. Sınıf Genişletilmiş Müfredat Listesi (5 Farklı Konu)</h4><ul>`;
+            topics.forEach((topic, idx) => { currHtml += `<li><b>Sayfa ${idx+1}: ${topic}</b></li>`; });
+            currHtml += `</ul>`;
+            document.getElementById(type + 'Curriculum').innerHTML = currHtml;
+
+            const pageIndex = currentPage[type];
+            const currentTopic = topics[pageIndex];
+            
+            const detail = uniqueTopicDatabase[currentTopic] || {
+                note: `${currentTopic} konusu temel esaslarıyla bu sayfada detaylıca işlenmektedir.`,
+                tip: "Dikkatli çalışarak konuyu pekiştirebilirsin.",
+                q: "Bu konuyla ilgili temel soru nedir?",
+                a: "1"
+            };
+
+            let html = `<h3>📌 ${grade}. Sınıf: ${currentTopic} (Sayfa ${pageIndex + 1} / ${totalLessons})</h3>`;
+            html += `<div class="speech-controls"><button class="speech-btn speak-btn" onclick="speakLessonContent('${type}')">🔊 Hocayı Dinle</button><button class="speech-btn stop-btn" onclick="stopSpeech()">⏹️ Sesi Durdur</button></div>`;
+            html += `<div id="${type}FullTextContent"><div class="note-card"><h4>📝 Detaylı Konu Anlatımı</h4><p>${detail.note}</p></div><div class="note-card"><h4>💡 Önemli Püf Noktası</h4><p>${detail.tip}</p></div></div>`;
+            html += `<div class="quiz-card"><h4>❓ Sayfa Sorusu</h4><p>${detail.q}</p><input type="text" id="${type}AnsInput" placeholder="Cevabınız..." onkeyup="if(event.key==='Enter') checkLessonAnswer('${type}')"><button class="btn" onclick="checkLessonAnswer('${type}')">Kontrol Et</button><p id="${type}Res" style="font-weight:bold; margin-top:10px;"></p></div>`;
+            html += `<div class="page-navigation"><button class="page-btn" onclick="changePage('${type}', -1)" ${pageIndex === 0 ? 'disabled' : ''}>⬅ Önceki Sayfa</button><span><b>Sayfa: ${pageIndex + 1} / ${totalLessons}</b></span><button class="page-btn" onclick="changePage('${type}', 1)" ${pageIndex >= totalLessons - 1 ? 'disabled' : ''}>Sonraki Sayfa ➡</button></div>`;
+
+            document.getElementById(type + 'Content').innerHTML = html;
+        }
+
+        function changePage(type, direction) {
+            currentPage[type] += direction;
+            renderSubject(type);
+        }
+
+        function checkLessonAnswer(type) {
+            const grade = document.getElementById(type + 'Grade').value;
+            const pageIndex = currentPage[type];
+            const currentTopic = curriculumTopics[type][grade][pageIndex];
+            
+            const detail = uniqueTopicDatabase[currentTopic];
+            let expectedAns = detail.a.toString().toLowerCase().replace(/[^a-z0-9ığüşöç]/g, "");
+
+            const inputEl = document.getElementById(`${type}AnsInput`);
+            const resEl = document.getElementById(`${type}Res`);
+            if (!inputEl || !resEl) return;
+            
+            const userAnsClean = inputEl.value.toLowerCase().replace(/[^a-z0-9ığüşöç]/g, "");
+
+            if (userAnsClean === expectedAns) {
+                resEl.innerText = "🎉 Harika, doğru cevap!"; resEl.style.color = "green";
+            } else {
+                resEl.innerText = `❌ Yanlış. Beklenen cevap: "${detail.a}"`; resEl.style.color = "red";
+            }
+        }
+
+        function speakLessonContent(type) {
+            if (!('speechSynthesis' in window)) return alert("Ses okuma desteklenmiyor!");
+            window.speechSynthesis.cancel();
+            const container = document.getElementById(type + 'FullTextContent');
+            if(!container) return;
+            const utterance = new SpeechSynthesisUtterance(container.innerText);
+            utterance.lang = 'tr-TR';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function stopSpeech() {
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        }
+
+        /* VS Modu Javascript kodları aşağıda aynen korunmuştur */
+        const vsChannel = new BroadcastChannel('fen_mat_vs_channel');
+        let myPlayerId = 'p_' + Math.random().toString(36).substr(2, 9);
+        let myNickname = '';
+        let currentRoom = null;
+        let isHost = false;
+        
+        let gameTimerInterval = null;
+        let overlayInterval = null;
+        let isCountingDown = false;
+        let lastRenderedQIndex = -1;
+
+        const vsQuestionBank = [
+            { cat: "🔬 Fen Bilimleri", q: "Uzay araştırmalarında uzaya gönderilen İNSANSIZ robotik araçlara ne ad verilir?", opts: ["Uzay Sondası", "Uzay Mekiği", "Yapay Uydu", "Uzay İstasyonu"], a: 0 },
+            { cat: "🔬 Fen Bilimleri", q: "Hücrede enerji üretmekle görevli organel hangisidir?", opts: ["Ribozom", "Mitokondri", "Kloroplast", "Lizozom"], a: 1 },
+            { cat: "🔬 Fen Bilimleri", q: "Işığı toplamak için ÇUKUR AYNA kullanan teleskop türü hangisidir?", opts: ["Mercekli", "Aynalı", "Radyo", "Kırılmalı"], a: 1 },
+            { cat: "🔬 Fen Bilimleri", q: "Ağırlık ölçmek için kullanılan araç hangisidir?", opts: ["Terazi", "Dinamometre", "Termometre", "Barometre"], a: 1 },
+            { cat: "📐 Matematik", q: "(-7) + (+12) işleminin sonucu kaçtır?", opts: ["-5", "5", "-19", "19"], a: 1 },
+            { cat: "📐 Matematik", q: "3² + 4² işleminin sonucu kaçtır?", opts: ["14", "25", "49", "12"], a: 1 },
+            { cat: "📐 Matematik", q: "Hangi sayı 5'e tam bölünür?", opts: ["123", "454", "685", "789"], a: 2 },
+            { cat: "📚 Türkçe", q: "'Sıcak' kelimesinin zıt anlamlısı aşağıdakilerden hangisidir?", opts: ["Ilık", "Soğuk", "Buz", "Pişmiş"], a: 1 },
+            { cat: "📚 Türkçe", q: "Aşağıdakilerden hangisi bir türetme (yapım) ekidir?", opts: ["-ler", "-den", "-lik", "-in"], a: 2 }
+        ];
+
+        vsChannel.onmessage = (event) => {
+            const data = event.data;
+            if (!data) return;
+
+            if (isHost && currentRoom) {
+                if (data.type === 'REQ_JOIN' && data.roomId === currentRoom.id) {
+                    if (currentRoom.players.length < 4 && currentRoom.status === 'lobby') {
+                        if (!currentRoom.players.some(p => p.id === data.player.id)) {
+                            currentRoom.players.push(data.player);
+                            broadcastRoomState();
+                            renderCurrentRoomState();
+                        }
+                    }
+                }
+                if (data.type === 'REQ_READY' && data.roomId === currentRoom.id) {
+                    const p = currentRoom.players.find(x => x.id === data.playerId);
+                    if (p) {
+                        p.ready = !p.ready;
+                        broadcastRoomState();
+                        renderCurrentRoomState();
+                    }
+                }
+                if (data.type === 'REQ_ANSWER' && data.roomId === currentRoom.id) {
+                    handlePlayerAnswer(data.playerId, data.optIndex, data.qIndex);
+                }
+                if (data.type === 'REQ_LEAVE' && data.roomId === currentRoom.id) {
+                    currentRoom.players = currentRoom.players.filter(p => p.id !== data.playerId);
+                    if (currentRoom.status === 'playing' && currentRoom.answeredPlayers) {
+                        if (currentRoom.answeredPlayers.length >= currentRoom.players.length && currentRoom.players.length >= 2) {
+                            currentRoom.allAnswered = true;
+                        }
+                    }
+                    broadcastRoomState();
+                    renderCurrentRoomState();
+                }
+            }
+
+            if (data.type === 'SYNC_ROOM') {
+                if (currentRoom && currentRoom.id === data.room.id) {
+                    currentRoom = data.room;
+                    renderCurrentRoomState();
+                }
+            }
+        };
+
+        function broadcastRoomState() {
+            if (currentRoom) {
+                vsChannel.postMessage({ type: 'SYNC_ROOM', roomId: currentRoom.id, room: currentRoom });
+                localStorage.setItem('vs_room_' + currentRoom.id, JSON.stringify(currentRoom));
+            }
+        }
+
+        function createVSRoom() {
+            const nick = document.getElementById('vsNickname').value.trim();
+            if (!nick) return alert("Lütfen bir takma isim girin!");
+            myNickname = nick;
+            isHost = true;
+
+            const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+            currentRoom = {
+                id: roomId,
+                hostId: myPlayerId,
+                status: 'lobby',
+                settings: { time: 15, count: 5, subject: 'all' },
+                players: [{ id: myPlayerId, name: myNickname, ready: true, score: 0 }],
+                questions: [],
+                currentQIndex: 0,
+                answeredPlayers: [],
+                allAnswered: false
+            };
+
+            broadcastRoomState();
+            renderCurrentRoomState();
+        }
+
+        function joinVSRoom() {
+            const nick = document.getElementById('vsNickname').value.trim();
+            const code = document.getElementById('vsJoinCode').value.trim();
+            if (!nick || !code) return alert("Lütfen takma isim ve oda kodunu girin!");
+
+            myNickname = nick;
+            isHost = false;
+
+            const saved = localStorage.getItem('vs_room_' + code);
+            if (saved) currentRoom = JSON.parse(saved);
+            else currentRoom = { id: code, status: 'lobby', players: [] };
+
+            vsChannel.postMessage({
+                type: 'REQ_JOIN',
+                roomId: code,
+                player: { id: myPlayerId, name: myNickname, ready: false, score: 0 }
+            });
+
+            document.getElementById('vsEntryView').style.display = 'none';
+            document.getElementById('vsLobbyView').style.display = 'block';
+            document.getElementById('vsRoomCodeDisplay').innerText = code;
+            document.getElementById('vsHostBadge').innerText = "Odaya bağlanılıyor, yönetici yanıtı bekleniyor...";
+        }
+
+        function renderCurrentRoomState() {
+            if (!currentRoom) return;
+
+            if (currentRoom.status === 'lobby') {
+                document.getElementById('vsEntryView').style.display = 'none';
+                document.getElementById('vsLobbyView').style.display = 'block';
+                document.getElementById('vsGameView').style.display = 'none';
+                document.getElementById('vsResultView').style.display = 'none';
+                updateLobbyUI();
+            } 
+            else if (currentRoom.status === 'playing') {
+                if (document.getElementById('vsGameView').style.display === 'none' || lastRenderedQIndex !== currentRoom.currentQIndex) {
+                    renderVSGameScreen();
+                } else {
+                    updateLiveScoreboard();
+                }
+
+                if (currentRoom.allAnswered && !isCountingDown) {
+                    trigger3SecondCountdown();
+                }
+            } 
+            else if (currentRoom.status === 'ended') {
+                showVSResults();
+            }
+        }
+
+        function updateLobbyUI() {
+            document.getElementById('vsRoomCodeDisplay').innerText = currentRoom.id;
+            document.getElementById('vsPlayerCount').innerText = currentRoom.players.length;
+            
+            const listEl = document.getElementById('vsPlayerList');
+            listEl.innerHTML = '';
+
+            currentRoom.players.forEach(p => {
+                const isPlayerHost = p.id === currentRoom.hostId;
+                listEl.innerHTML += `
+                    <div class="player-tag">
+                        <span><b>${p.name}</b> ${isPlayerHost ? '👑 (Yönetici)' : ''}</span>
+                        <span class="${p.ready ? 'status-ready' : 'status-waiting'}">
+                            ${p.ready ? '✅ Hazır' : '⏳ Bekliyor'}
+                        </span>
+                    </div>
+                `;
+            });
+
+            if (isHost) {
+                document.getElementById('vsHostSettings').style.display = 'block';
+                document.getElementById('vsHostBadge').innerText = "Bu odanın yöneticisisiniz.";
+                document.getElementById('vsReadyBtn').style.display = 'none';
+                
+                const nonHostPlayers = currentRoom.players.filter(p => p.id !== currentRoom.hostId);
+                const allReady = nonHostPlayers.length > 0 && nonHostPlayers.every(p => p.ready);
+                
+                document.getElementById('vsStartBtn').style.display = 'inline-block';
+                document.getElementById('vsStartBtn').disabled = !(currentRoom.players.length >= 2 && allReady);
+            } else {
+                document.getElementById('vsHostSettings').style.display = 'none';
+                document.getElementById('vsHostBadge').innerText = "Yöneticinin oyunu başlatması bekleniyor...";
+                document.getElementById('vsStartBtn').style.display = 'none';
+                document.getElementById('vsReadyBtn').style.display = 'inline-block';
+
+                const me = currentRoom.players.find(p => p.id === myPlayerId);
+                document.getElementById('vsReadyBtn').innerText = me && me.ready ? "Hazırlığı İptal Et" : "Hazırım / Onayla";
+            }
+        }
+
+        function toggleVSReady() {
+            if (isHost) return;
+            vsChannel.postMessage({
+                type: 'REQ_READY',
+                roomId: currentRoom.id,
+                playerId: myPlayerId
+            });
+        }
+
+        function leaveVSRoom() {
+            if (currentRoom) {
+                if (isHost) {
+                    currentRoom.status = 'ended';
+                    broadcastRoomState();
+                } else {
+                    vsChannel.postMessage({
+                        type: 'REQ_LEAVE',
+                        roomId: currentRoom.id,
+                        playerId: myPlayerId
+                    });
+                }
+            }
+            currentRoom = null;
+            isHost = false;
+            lastRenderedQIndex = -1;
+            document.getElementById('vsEntryView').style.display = 'block';
+            document.getElementById('vsLobbyView').style.display = 'none';
+            document.getElementById('vsGameView').style.display = 'none';
+            document.getElementById('vsResultView').style.display = 'none';
+        }
+
+        function startVSGame() {
+            if (!isHost) return;
+
+            const selectedSubject = document.getElementById('vsSubjectSelect').value;
+            currentRoom.settings.subject = selectedSubject;
+            currentRoom.settings.time = parseInt(document.getElementById('vsTimeSelect').value);
+            currentRoom.settings.count = parseInt(document.getElementById('vsCountSelect').value);
+            
+            let questionPool = vsQuestionBank;
+            if (selectedSubject === 'fen') {
+                questionPool = vsQuestionBank.filter(q => q.cat.includes("Fen"));
+            } else if (selectedSubject === 'math') {
+                questionPool = vsQuestionBank.filter(q => q.cat.includes("Matematik"));
+            } else if (selectedSubject === 'turkce') {
+                questionPool = vsQuestionBank.filter(q => q.cat.includes("Türkçe"));
+            }
+
+            let shuffled = [...questionPool].sort(() => 0.5 - Math.random());
+            currentRoom.questions = shuffled.slice(0, Math.min(currentRoom.settings.count, shuffled.length));
+            currentRoom.currentQIndex = 0;
+            currentRoom.answeredPlayers = [];
+            currentRoom.allAnswered = false;
+            currentRoom.status = 'playing';
+
+            currentRoom.players.forEach(p => p.score = 0);
+
+            broadcastRoomState();
+            renderCurrentRoomState();
+        }
+
+        function renderVSGameScreen() {
+            isCountingDown = false;
+            clearInterval(overlayInterval);
+            document.getElementById('vsCountdownOverlay').style.display = 'none';
+
+            lastRenderedQIndex = currentRoom.currentQIndex;
+            document.getElementById('vsEntryView').style.display = 'none';
+            document.getElementById('vsLobbyView').style.display = 'none';
+            document.getElementById('vsResultView').style.display = 'none';
+            document.getElementById('vsGameView').style.display = 'block';
+
+            const qIndex = currentRoom.currentQIndex;
+            const qData = currentRoom.questions[qIndex];
+
+            document.getElementById('vsQuestionProgress').innerText = `Soru ${qIndex + 1} / ${currentRoom.questions.length}`;
+            document.getElementById('vsQuestionCategory').innerText = qData.cat;
+            document.getElementById('vsQuestionText').innerText = qData.q;
+
+            const optsBox = document.getElementById('vsOptionsContainer');
+            optsBox.innerHTML = '';
+
+            const hasIAnswered = currentRoom.answeredPlayers && currentRoom.answeredPlayers.includes(myPlayerId);
+
+            qData.opts.forEach((optText, i) => {
+                optsBox.innerHTML += `<button class="vs-opt-btn" ${hasIAnswered ? 'disabled' : ''} onclick="submitVSAnswer(${i})">${optText}</button>`;
+            });
+
+            updateLiveScoreboard();
+            startQuestionTimer();
+        }
+
+        function startQuestionTimer() {
+            clearInterval(gameTimerInterval);
+            let timeLeft = currentRoom.settings.time;
+            document.getElementById('vsTimerDisplay').innerText = timeLeft;
+
+            gameTimerInterval = setInterval(() => {
+                if (isCountingDown) return;
+                timeLeft--;
+                document.getElementById('vsTimerDisplay').innerText = timeLeft;
+
+                if (timeLeft <= 0) {
+                    clearInterval(gameTimerInterval);
+                    if (isHost) nextVSQuestion();
+                }
+            }, 1000);
+        }
+
+        function submitVSAnswer(optIndex) {
+            document.querySelectorAll('.vs-opt-btn').forEach(btn => btn.disabled = true);
+
+            if (isHost) {
+                handlePlayerAnswer(myPlayerId, optIndex, currentRoom.currentQIndex);
+            } else {
+                vsChannel.postMessage({
+                    type: 'REQ_ANSWER',
+                    roomId: currentRoom.id,
+                    playerId: myPlayerId,
+                    optIndex: optIndex,
+                    qIndex: currentRoom.currentQIndex
+                });
+            }
+        }
+
+        function handlePlayerAnswer(playerId, optIndex, qIndex) {
+            if (!isHost || !currentRoom || currentRoom.status !== 'playing') return;
+            if (qIndex !== currentRoom.currentQIndex) return;
+
+            if (!currentRoom.answeredPlayers) currentRoom.answeredPlayers = [];
+            if (currentRoom.answeredPlayers.includes(playerId)) return;
+
+            currentRoom.answeredPlayers.push(playerId);
+
+            const qData = currentRoom.questions[qIndex];
+            if (optIndex === qData.a) {
+                const p = currentRoom.players.find(x => x.id === playerId);
+                if (p) p.score += 10;
+            }
+
+            if (currentRoom.answeredPlayers.length >= currentRoom.players.length && currentRoom.players.length >= 2) {
+                currentRoom.allAnswered = true;
+            }
+
+            broadcastRoomState();
+            renderCurrentRoomState();
+        }
+
+        function trigger3SecondCountdown() {
+            isCountingDown = true;
+            clearInterval(gameTimerInterval);
+            clearInterval(overlayInterval);
+
+            const overlay = document.getElementById('vsCountdownOverlay');
+            const numDisplay = document.getElementById('vsOverlaySec');
+            overlay.style.display = 'flex';
+            
+            let count = 3;
+            numDisplay.innerText = count;
+
+            overlayInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    numDisplay.innerText = count;
+                } else {
+                    clearInterval(overlayInterval);
+                    overlay.style.display = 'none';
+                    isCountingDown = false;
+                    if (isHost) {
+                        nextVSQuestion();
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateLiveScoreboard() {
+            const board = document.getElementById('vsLiveScoreboard');
+            board.innerHTML = '';
+            let sorted = [...currentRoom.players].sort((a,b) => b.score - a.score);
+            sorted.forEach((p, idx) => {
+                const answered = currentRoom.answeredPlayers && currentRoom.answeredPlayers.includes(p.id);
+                board.innerHTML += `<div class="player-tag"><span>#${idx+1} <b>${p.name}</b> ${answered ? '⚡ (Cevapladı)' : '⏳ (Düşünüyor)'}</span> <span><b>${p.score} Puan</b></span></div>`;
+            });
+        }
+
+        function nextVSQuestion() {
+            if (!isHost || !currentRoom) return;
+
+            currentRoom.currentQIndex++;
+            currentRoom.answeredPlayers = [];
+            currentRoom.allAnswered = false;
+
+            if (currentRoom.currentQIndex < currentRoom.questions.length) {
+                broadcastRoomState();
+                renderCurrentRoomState();
+            } else {
+                currentRoom.status = 'ended';
+                broadcastRoomState();
+                renderCurrentRoomState();
+            }
+        }
+
+        function showVSResults() {
+            clearInterval(gameTimerInterval);
+            clearInterval(overlayInterval);
+            document.getElementById('vsCountdownOverlay').style.display = 'none';
+            document.getElementById('vsGameView').style.display = 'none';
+            document.getElementById('vsResultView').style.display = 'block';
+
+            let sorted = [...currentRoom.players].sort((a,b) => b.score - a.score);
+            document.getElementById('vsWinnerName').innerText = `🥇 ${sorted[0].name} (${sorted[0].score} Puan)`;
+
+            const board = document.getElementById('vsFinalLeaderboard');
+            board.innerHTML = '';
+            sorted.forEach((p, idx) => {
+                board.innerHTML += `<div class="player-tag"><span>Derece ${idx+1}: <b>${p.name}</b></span> <span><b>${p.score} Puan</b></span></div>`;
+            });
+        }
+
+        function returnToVSLobby() {
+            if (isHost) {
+                currentRoom.status = 'lobby';
+                broadcastRoomState();
+            }
+            renderCurrentRoomState();
+        }
+    </script>
+</body>
+</html>
