@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 1v1 Basketball - Pro Online</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #030508;
+            color: #fff;
+        }
+        #game-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px;
+            z-index: 5;
+            display: none;
+        }
+
+        #scoreboard-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(10, 15, 25, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 12px 35px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .team-score {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 800;
+        }
+        #match-timer {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffaa55;
+            padding: 0 10px;
+        }
+
+        #controls-hint {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            background: rgba(10, 15, 25, 0.75);
+            backdrop-filter: blur(8px);
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 13px;
+            color: #ccc;
+            line-height: 1.5;
+            pointer-events: none;
+        }
+
+        #announce-box {
+            position: absolute;
+            top: 20%;
+            font-size: 44px;
+            font-weight: 900;
+            font-style: italic;
+            color: #fff;
+            text-shadow: 0 0 15px rgba(0,0,0,0.9), 0 0 25px #ff6600;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+        }
+        #announce-box.active {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        #shot-bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 25px;
+            display: none;
+        }
+        #shot-bar-container {
+            width: 340px;
+            height: 24px;
+            background: rgba(5, 10, 20, 0.8);
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        #shot-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ccff, #00ff66, #ffcc00, #ff3300);
+        }
+
+        .menu-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(20, 25, 40, 0.9) 0%, rgba(5, 7, 12, 0.98) 100%);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: auto;
+        }
+        .menu-title {
+            font-size: 52px;
+            background: linear-gradient(135deg, #fff 0%, #ff8800 50%, #ff3300 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 25px;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+        .btn {
+            background: linear-gradient(135deg, #ff6600 0%, #d94400 100%);
+            color: #fff;
+            border: none;
+            padding: 14px 35px;
+            margin: 8px;
+            font-size: 16px;
+            font-weight: 800;
+            border-radius: 30px;
+            cursor: pointer;
+            width: 260px;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 20px rgba(255, 102, 0, 0.3);
+        }
+        .btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(255, 102, 0, 0.5);
+        }
+        .panel {
+            background: rgba(18, 24, 38, 0.95);
+            border: 1px solid rgba(255, 102, 0, 0.4);
+            border-radius: 20px;
+            padding: 30px;
+            width: 420px;
+            max-width: 90%;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        .input-field {
+            background: rgba(5, 10, 20, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 18px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            width: 100%;
+            margin: 10px 0;
+            outline: none;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .input-field:focus {
+            border-color: #ff6600;
+        }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin: 12px 0;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .setting-row select {
+            background: rgba(5, 10, 20, 0.8);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+        }
+        .hidden { display: none !important; }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0,0,0,0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 4;
+            display: none;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+    <div id="game-container"></div>
+    <div id="crosshair"></div>
+
+    <div id="ui-overlay">
+        <div id="scoreboard-container">
+            <div class="team-score">
+                <span id="blue-score-text">MAVİ 0</span>
+            </div>
+            <div id="match-timer">03:00</div>
+            <div class="team-score">
+                <span id="red-score-text">0 KIRMIZI</span>
+            </div>
+        </div>
+        <div id="announce-box">SWISH!</div>
+        <div id="controls-hint">
+            <b>WASD</b>: Hareket Et<br>
+            <b>SHIFT</b>: Turbo / Çalım (Koşma)<br>
+            <b>E</b>: Şut Çek (Barı yeşil bölgede bırak)<br>
+            <b>F</b>: Rakipten Topu Kap (Steal)
+        </div>
+        <div id="shot-bar-wrapper">
+            <div style="font-size:12px; font-weight:800; color:#ffaa55;">YEŞİL BÖLGEDE BIRAK</div>
+            <div id="shot-bar-container">
+                <div id="shot-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN MENU -->
+    <div id="main-menu" class="menu-screen">
+        <h1 class="menu-title">ARENA 1v1 PRO</h1>
+        <input type="text" id="player-nickname" class="input-field" placeholder="Takma Adını Gir" value="Oyuncu" style="width: 260px; text-transform:none;">
+        <button class="btn" id="btn-online-menu">ONLINE OYNA</button>
+        <button class="btn" id="btn-offline">KARŞILAŞMA (BOT)</button>
+    </div>
+
+    <!-- ONLINE LOBBY MENU -->
+    <div id="online-menu" class="menu-screen hidden">
+        <h1 class="menu-title" style="font-size: 36px;">ONLINE LOBİ</h1>
+        <button class="btn" id="btn-create-room">ODA KUR (MAVİ)</button>
+        <button class="btn" id="btn-join-room-screen">ODAYA KATIL (KIRMIZI)</button>
+        <button class="btn" id="btn-online-back" style="background: #444;">GERİ</button>
+    </div>
+
+    <!-- CREATE ROOM MENU -->
+    <div id="create-room-menu" class="menu-screen hidden">
+        <div class="panel">
+            <h2 style="color:#ff8800; margin-bottom:15px;">ODA AYARLARI</h2>
+            <div class="setting-row">
+                <label>Maç Süresi</label>
+                <select id="select-duration">
+                    <option value="60">1 Dakika</option>
+                    <option value="180" selected>3 Dakika</option>
+                    <option value="300">5 Dakika</option>
+                </select>
+            </div>
+            <button class="btn" id="btn-confirm-create" style="width:100%; margin-top:20px;">ODAYI OLUŞTUR</button>
+            <button class="btn" id="btn-create-back" style="width:100%; background:#444;">GERİ</button>
+        </div>
+    </div>
+
+    <!-- JOIN ROOM MENU -->
+    <div id="join-room-menu" class="menu-screen hidden">
+        <div class="panel">
+            <h2 style="color:#ff8800; margin-bottom:15px;">ODAYA KATIL</h2>
+            <input type="text" id="input-room-code" class="input-field" placeholder="ODA KODU (Örn: A3B9X)">
+            <button class="btn" id="btn-confirm-join" style="width:100%; margin-top:20px;">BAĞLAN</button>
+            <button class="btn" id="btn-join-back" style="width:100%; background:#444;">GERİ</button>
+        </div>
+    </div>
+
+    <!-- WAITING ROOM / ROOM LOBBY -->
+    <div id="waiting-room" class="menu-screen hidden">
+        <div class="panel">
+            <h2 style="color:#ff8800; margin-bottom:10px;">BEKLEME ODASI</h2>
+            <p style="font-size:14px; color:#aaa; margin-bottom:15px;">Oda Kodun: <b id="display-room-code" style="color:#fff; font-size:18px; letter-spacing: 2px;">---</b></p>
+            <div id="player-list" style="width:100%; background:rgba(0,0,0,0.4); border-radius:10px; padding:15px; min-height:100px; margin-bottom:20px; text-align:left; font-size:14px;">
+                <b>Katılanlar:</b><br>
+                <span id="list-names">Bağlanılıyor...</span>
+            </div>
+            <button class="btn" id="btn-start-online-match" style="width:100%; display:none;">MAÇI BAŞLAT</button>
+            <button class="btn" id="btn-leave-room" style="width:100%; background:#444;">AYRIL</button>
+        </div>
+    </div>
+
+    <!-- GUEST START SCREEN (KIRMIZI İÇİN GİRİŞ BUTONU) -->
+    <div id="guest-start-screen" class="menu-screen hidden">
+        <div class="panel">
+            <h2 style="color:#ff8800; margin-bottom:15px;">MAÇ BAŞLADI!</h2>
+            <p style="font-size:14px; color:#aaa; margin-bottom:20px; text-align:center;">Kırmızı Takım olarak sahneye girmek ve kamerayı aktif etmek için tıkla.</p>
+            <button class="btn" id="btn-guest-enter-game" style="width:100%;">SAHNEYE GİR</button>
+        </div>
+    </div>
+
+    <!-- PAUSE MENU -->
+    <div id="pause-menu" class="menu-screen hidden">
+        <h1 class="menu-title" style="font-size: 42px; margin-bottom:20px;">OYUN DURAKLATILDI</h1>
+        <button class="btn" id="btn-resume">DEVAM ET</button>
+        <button class="btn" id="btn-quit">ANA MENÜ</button>
+    </div>
+
+    <script>
+        let peer = null;
+        let conn = null;
+        let isHost = false;
+        let isOnlineGame = false;
+        let roomCode = '';
+        let myNickname = 'Oyuncu';
+        let peerNickname = 'Rakip';
+
+        let scene, camera, renderer;
+        const courtWidth = 15, courtLength = 28;
+        let bluePlayer, redPlayer;
+        let localEntity, remoteEntity;
+        
+        let score = { blue: 0, red: 0 };
+        let matchDuration = 180;
+        let matchTimer = 180;
+
+        const keys = {};
+        let mouseSens = 0.002;
+        let yaw = 0, pitch = 0.1;
+        let isPointerLocked = false;
+        let isChargingShot = false;
+        let shotPower = 0;
+        let shotPowerDir = 1;
+
+        let ball, ballPossession = 'blue';
+        let immunityTimer = 0;
+        let isGameRunning = false;
+        let goalScoredCooldown = 0;
+
+        const GRAVITY = -19.5;
+        const BALL_RADIUS = 0.35;
+        const PLAYER_RADIUS = 0.65;
+
+        const HOOP_BLUE_POS = new THREE.Vector3(0, 3.05, 13.5); 
+        const RED_RIM_POS   = new THREE.Vector3(0, 3.05, -12.85);
+        const HOOP_RADIUS = 0.55;
+
+        let announceTimeout;
+        function showAnnounce(text) {
+            const box = document.getElementById('announce-box');
+            box.innerText = text;
+            box.classList.add('active');
+            clearTimeout(announceTimeout);
+            announceTimeout = setTimeout(() => {
+                box.classList.remove('active');
+            }, 1800);
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x04060d);
+            scene.fog = new THREE.FogExp2(0x04060d, 0.009);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0x1a2640, 0.8);
+            scene.add(ambientLight);
+
+            const keyLight = new THREE.DirectionalLight(0xfff5e6, 1.4);
+            keyLight.position.set(15, 35, 10);
+            keyLight.castShadow = true;
+            keyLight.shadow.mapSize.width = 2048;
+            keyLight.shadow.mapSize.height = 2048;
+            keyLight.shadow.camera.near = 0.5;
+            keyLight.shadow.camera.far = 60;
+            keyLight.shadow.camera.left = -20;
+            keyLight.shadow.camera.right = 20;
+            keyLight.shadow.camera.top = 20;
+            keyLight.shadow.camera.bottom = -20;
+            keyLight.shadow.bias = -0.0005;
+            scene.add(keyLight);
+
+            const fillLight = new THREE.DirectionalLight(0x3366ff, 0.5);
+            fillLight.position.set(-15, 20, -10);
+            scene.add(fillLight);
+
+            buildProCourtWithGraphics();
+            createStylizedEntities();
+            setupRolesAndPositions();
+
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('mousemove', onMouseMove);
+            
+            window.addEventListener('blur', () => {
+                for (let k in keys) keys[k] = false;
+            });
+            document.addEventListener('pointerlockchange', () => {
+                isPointerLocked = (document.pointerLockElement === document.body);
+                if (!isPointerLocked) {
+                    for (let k in keys) keys[k] = false;
+                    if (isGameRunning) {
+                        document.getElementById('pause-menu').classList.remove('hidden');
+                    }
+                }
+            });
+
+            setupUI();
+
+            let lastTime = performance.now();
+            function animate(now) {
+                requestAnimationFrame(animate);
+                const dt = Math.min((now - lastTime) / 1000, 0.08);
+                lastTime = now;
+
+                if (isGameRunning) {
+                    matchTimer -= dt;
+                    if (matchTimer <= 0) {
+                        matchTimer = 0;
+                        isGameRunning = false;
+                        document.exitPointerLock();
+                        showAnnounce("MAÇ BİTTİ!");
+                        setTimeout(() => {
+                            document.getElementById('main-menu').classList.remove('hidden');
+                            document.getElementById('ui-overlay').style.display = 'none';
+                            document.getElementById('crosshair').style.display = 'none';
+                        }, 2500);
+                    }
+                    updateTimerUI();
+                    updateGame(dt);
+                }
+                renderer.render(scene, camera);
+            }
+            animate(lastTime);
+        }
+
+        function updateTimerUI() {
+            const mins = Math.floor(matchTimer / 60).toString().padStart(2, '0');
+            const secs = Math.floor(matchTimer % 60).toString().padStart(2, '0');
+            document.getElementById('match-timer').innerText = `${mins}:${secs}`;
+        }
+
+        function buildProCourtWithGraphics() {
+            // Yüksek kaliteli ahşap parke dokusu üretimi
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#b86b3b';
+            ctx.fillRect(0, 0, 1024, 1024);
+            
+            ctx.fillStyle = '#a1582b';
+            for(let i=0; i<1024; i+=32) {
+                ctx.fillRect(0, i, 1024, 14);
+            }
+
+            // Saha çizgileri ve boyalı alanlar
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(100, 100, 824, 824);
+            
+            // Orta saha çemberi
+            ctx.beginPath();
+            ctx.arc(512, 512, 120, 0, Math.PI * 2);
+            ctx.stroke();
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(1, 2);
+
+            const floorMat = new THREE.MeshStandardMaterial({ 
+                map: texture, 
+                roughness: 0.18, 
+                metalness: 0.1,
+                envMapIntensity: 1.0 
+            });
+            const floorGeo = new THREE.PlaneGeometry(courtWidth * 2.2, courtLength * 2.2);
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Çevre duvarları ve seyirci tribünü hissi için karanlık bloklar
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.9 });
+            const wallGeo = new THREE.BoxGeometry(courtWidth * 2.4, 6, 1);
+            
+            const wall1 = new THREE.Mesh(wallGeo, wallMat);
+            wall1.position.set(0, 3, -courtLength - 2);
+            scene.add(wall1);
+
+            const wall2 = new THREE.Mesh(wallGeo, wallMat);
+            wall2.position.set(0, 3, courtLength + 2);
+            scene.add(wall2);
+
+            buildProfessionalHoop(HOOP_BLUE_POS, 1);
+            buildProfessionalHoop(new THREE.Vector3(0, 3.05, -13.5), -1);
+        }
+
+        function buildProfessionalHoop(pos, dir) {
+            const hoopGroup = new THREE.Group();
+            hoopGroup.position.set(pos.x, 0, pos.z);
+
+            const pole = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.14, 0.16, 4.8, 16),
+                new THREE.MeshStandardMaterial({ color: 0x1a2233, metalness: 0.9, roughness: 0.2 })
+            );
+            pole.position.set(0, 2.4, dir * 1.3);
+            pole.castShadow = true;
+            hoopGroup.add(pole);
+
+            const bb = new THREE.Mesh(
+                new THREE.BoxGeometry(2.1, 1.25, 0.1),
+                new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, transmission: 0.85, roughness: 0.1 })
+            );
+            bb.position.set(0, 3.45, 0);
+            bb.castShadow = true;
+            hoopGroup.add(bb);
+
+            // Pota arkası destek demiri
+            const support = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.06, 0.06, 1.2, 8),
+                new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 })
+            );
+            support.rotation.x = Math.PI / 2;
+            support.position.set(0, 3.45, -dir * 0.6);
+            hoopGroup.add(support);
+
+            const rim = new THREE.Mesh(
+                new THREE.TorusGeometry(HOOP_RADIUS, 0.045, 16, 32),
+                new THREE.MeshStandardMaterial({ color: 0xff3300, roughness: 0.2, metalness: 0.5 })
+            );
+            rim.rotation.x = Math.PI / 2;
+            rim.position.set(0, 3.05, -dir * 0.7);
+            rim.castShadow = true;
+            hoopGroup.add(rim);
+
+            scene.add(hoopGroup);
+        }
+
+        function createPlayerCharacter(jerseyColor) {
+            const group = new THREE.Group();
+            
+            const body = new THREE.Mesh(
+                new THREE.CylinderGeometry(PLAYER_RADIUS, PLAYER_RADIUS * 0.8, 1.15, 16),
+                new THREE.MeshStandardMaterial({ color: jerseyColor, roughness: 0.35, metalness: 0.1 })
+            );
+            body.position.y = 0.95;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            group.add(body);
+
+            const head = new THREE.Mesh(
+                new THREE.SphereGeometry(0.32, 16, 16),
+                new THREE.MeshStandardMaterial({ color: 0xd8b08c, roughness: 0.6 })
+            );
+            head.position.y = 1.68;
+            head.castShadow = true;
+            group.add(head);
+
+            return group;
+        }
+
+        function createStylizedEntities() {
+            const blueGroup = createPlayerCharacter(0x0066ff); 
+            scene.add(blueGroup);
+            bluePlayer = { mesh: blueGroup, pos: new THREE.Vector3(), speed: 7.5, sprintMultiplier: 1.55 };
+
+            const redGroup = createPlayerCharacter(0xdd1122); 
+            scene.add(redGroup);
+            redPlayer = { mesh: redGroup, pos: new THREE.Vector3(), speed: 7.5, sprintMultiplier: 1.55 };
+
+            const ballGeo = new THREE.SphereGeometry(BALL_RADIUS, 32, 32);
+            const ballMat = new THREE.MeshStandardMaterial({ color: 0xf2661b, roughness: 0.3, metalness: 0.1 });
+            const ballMesh = new THREE.Mesh(ballGeo, ballMat);
+            ballMesh.castShadow = true;
+            scene.add(ballMesh);
+            ball = { mesh: ballMesh, pos: new THREE.Vector3(), vel: new THREE.Vector3(), dribbleTimer: 0 };
+        }
+
+        function setupRolesAndPositions() {
+            if (isHost) {
+                localEntity = bluePlayer;
+                remoteEntity = redPlayer;
+            } else {
+                localEntity = redPlayer;
+                remoteEntity = bluePlayer;
+            }
+            resetPositions('blue');
+        }
+
+        function resetPositions(startingPossessor) {
+            ballPossession = startingPossessor || 'blue';
+            immunityTimer = 0.5;
+
+            bluePlayer.pos.set(0, 0, 5.0);
+            redPlayer.pos.set(0, 0, -5.0);
+
+            bluePlayer.mesh.position.copy(bluePlayer.pos);
+            redPlayer.mesh.position.copy(redPlayer.pos);
+            bluePlayer.mesh.rotation.y = 0;
+            redPlayer.mesh.rotation.y = Math.PI;
+
+            yaw = isHost ? 0 : Math.PI;
+            pitch = 0.1;
+            ball.vel.set(0, 0, 0);
+            updateBallPositionInstant();
+        }
+
+        function updateBallPositionInstant() {
+            if (ballPossession === 'blue') {
+                ball.pos.set(bluePlayer.pos.x, BALL_RADIUS + 0.5, bluePlayer.pos.z + 0.5);
+            } else if (ballPossession === 'red') {
+                ball.pos.set(redPlayer.pos.x, BALL_RADIUS + 0.5, redPlayer.pos.z - 0.5);
+            }
+            ball.mesh.position.copy(ball.pos);
+        }
+
+        function setupUI() {
+            document.getElementById('btn-offline').onclick = () => {
+                myNickname = document.getElementById('player-nickname').value || 'Oyuncu';
+                isOnlineGame = false;
+                isHost = true;
+                setupRolesAndPositions();
+                startMatch();
+            };
+
+            document.getElementById('btn-online-menu').onclick = () => {
+                myNickname = document.getElementById('player-nickname').value || 'Oyuncu';
+                document.getElementById('main-menu').classList.add('hidden');
+                document.getElementById('online-menu').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-online-back').onclick = () => {
+                document.getElementById('online-menu').classList.add('hidden');
+                document.getElementById('main-menu').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-create-room').onclick = () => {
+                document.getElementById('online-menu').classList.add('hidden');
+                document.getElementById('create-room-menu').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-create-back').onclick = () => {
+                document.getElementById('create-room-menu').classList.add('hidden');
+                document.getElementById('online-menu').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-join-room-screen').onclick = () => {
+                document.getElementById('online-menu').classList.add('hidden');
+                document.getElementById('join-room-menu').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-join-back').onclick = () => {
+                document.getElementById('join-room-menu').classList.add('hidden');
+                document.getElementById('online-menu').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-confirm-create').onclick = () => {
+                matchDuration = parseInt(document.getElementById('select-duration').value);
+                matchTimer = matchDuration;
+
+                isHost = true;
+                setupRolesAndPositions();
+                initPeerServer(true);
+            };
+
+            document.getElementById('btn-confirm-join').onclick = () => {
+                const code = document.getElementById('input-room-code').value.trim().toUpperCase();
+                if (!code) {
+                    alert('Lütfen bir oda kodu girin!');
+                    return;
+                }
+                isHost = false;
+                setupRolesAndPositions();
+                initPeerServer(false, code);
+            };
+
+            document.getElementById('btn-start-online-match').onclick = () => {
+                if (conn && isHost) {
+                    isOnlineGame = true;
+                    conn.send({ 
+                        type: 'START', 
+                        duration: matchDuration, 
+                        hostName: myNickname 
+                    });
+                    startMatch();
+                }
+            };
+
+            document.getElementById('btn-guest-enter-game').onclick = () => {
+                document.getElementById('guest-start-screen').classList.add('hidden');
+                document.getElementById('ui-overlay').style.display = 'flex';
+                document.getElementById('crosshair').style.display = 'block';
+                document.body.requestPointerLock();
+                isGameRunning = true;
+                score = { blue: 0, red: 0 };
+                resetPositions('blue');
+                updateScoreUI();
+            };
+
+            document.getElementById('btn-leave-room').onclick = () => {
+                if (peer) peer.destroy();
+                document.getElementById('waiting-room').classList.add('hidden');
+                document.getElementById('main-menu').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-resume').onclick = () => {
+                document.getElementById('pause-menu').classList.add('hidden');
+                document.body.requestPointerLock();
+            };
+
+            document.getElementById('btn-quit').onclick = () => {
+                document.getElementById('pause-menu').classList.add('hidden');
+                document.getElementById('main-menu').classList.remove('hidden');
+                isGameRunning = false;
+                score = { blue: 0, red: 0 };
+                resetPositions('blue');
+            };
+        }
+
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 5; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function initPeerServer(hosting, targetCode = '') {
+            if (peer) peer.destroy();
+
+            if (hosting) {
+                roomCode = generateRoomCode();
+                peer = new Peer(roomCode);
+            } else {
+                peer = new Peer();
+            }
+
+            peer.on('open', (id) => {
+                if (hosting) {
+                    document.getElementById('create-room-menu').classList.add('hidden');
+                    document.getElementById('waiting-room').classList.remove('hidden');
+                    document.getElementById('display-room-code').innerText = roomCode;
+                    document.getElementById('list-names').innerText = `${myNickname} (Mavi - Kurucu)`;
+                    document.getElementById('btn-start-online-match').style.display = 'block';
+                } else {
+                    document.getElementById('list-names').innerText = `Bağlanılıyor...`;
+                    conn = peer.connect(targetCode);
+                    setupConnectionEvents();
+                }
+            });
+
+            if (hosting) {
+                peer.on('connection', (c) => {
+                    conn = c;
+                    setupConnectionEvents();
+                });
+            }
+
+            peer.on('error', (err) => {
+                alert('Bağlantı hatası: Oda kodu bulunamadı veya ağ hatası oluştu!');
+                console.error(err);
+                document.getElementById('join-room-menu').classList.remove('hidden');
+                document.getElementById('waiting-room').classList.add('hidden');
+            });
+        }
+
+        function setupConnectionEvents() {
+            conn.on('open', () => {
+                if (!isHost) {
+                    document.getElementById('join-room-menu').classList.add('hidden');
+                    document.getElementById('waiting-room').classList.remove('hidden');
+                    document.getElementById('display-room-code').innerText = conn.peer;
+                    document.getElementById('list-names').innerText = `Odaya başarıyla bağlanıldı! Kurucu maçı başlatacak...`;
+                    conn.send({ type: 'JOIN', name: myNickname });
+                }
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'JOIN' && isHost) {
+                    peerNickname = data.name;
+                    document.getElementById('list-names').innerText += `, ${peerNickname} (Kırmızı)`;
+                } else if (data.type === 'START') {
+                    matchDuration = data.duration;
+                    matchTimer = matchDuration;
+                    peerNickname = data.hostName || 'Kurucu';
+                    isOnlineGame = true;
+                    
+                    document.getElementById('waiting-room').classList.add('hidden');
+                    document.getElementById('guest-start-screen').classList.remove('hidden');
+                } else if (data.type === 'PLAYER_SYNC') {
+                    remoteEntity.pos.copy(data.pos);
+                    remoteEntity.mesh.rotation.y = data.yaw;
+                    remoteEntity.mesh.position.copy(remoteEntity.pos);
+                } else if (data.type === 'BALL_SYNC' && !isHost) {
+                    ball.pos.copy(data.ballPos);
+                    ball.vel.copy(data.ballVel);
+                    ballPossession = data.possession;
+                    score = data.score;
+                    updateScoreUI();
+                } else if (data.type === 'SHOOT' && !isHost) {
+                    ballPossession = 'none';
+                    ball.vel.copy(data.vel);
+                } else if (data.type === 'STEAL') {
+                    ballPossession = data.newPossession;
+                    immunityTimer = 0.5;
+                    showAnnounce("TOP ÇALINDI!");
+                }
+            });
+        }
+
+        function startMatch() {
+            document.querySelectorAll('.menu-screen').forEach(m => m.classList.add('hidden'));
+            document.getElementById('ui-overlay').style.display = 'flex';
+            document.getElementById('crosshair').style.display = 'block';
+            document.body.requestPointerLock();
+            isGameRunning = true;
+            score = { blue: 0, red: 0 };
+            resetPositions('blue');
+            updateScoreUI();
+        }
+
+        function onKeyDown(e) {
+            keys[e.code] = true;
+            if (e.code === 'KeyE' && !isChargingShot && ((isHost && ballPossession === 'blue') || (!isHost && ballPossession === 'red')) && isGameRunning) {
+                isChargingShot = true;
+                shotPower = 0;
+                shotPowerDir = 1;
+                document.getElementById('shot-bar-wrapper').style.display = 'flex';
+            }
+            // Top çalma mekaniği (F tuşu)
+            if (e.code === 'KeyF' && isGameRunning && immunityTimer <= 0) {
+                attemptSteal();
+            }
+        }
+
+        function onKeyUp(e) {
+            keys[e.code] = false;
+            if (e.code === 'KeyE' && isChargingShot) {
+                releaseShot();
+            }
+        }
+
+        function attemptSteal() {
+            let myHasBall = isHost ? (ballPossession === 'blue') : (ballPossession === 'red');
+            if (myHasBall) return; // Zaten top sende ise çalamazsın
+
+            let opponentPos = isHost ? redPlayer.pos : bluePlayer.pos;
+            let dist = localEntity.pos.distanceTo(opponentPos);
+
+            // Yakın mesafedeyse (2.2 birim) topu çalabilir
+            if (dist < 2.2) {
+                ballPossession = isHost ? 'blue' : 'red';
+                immunityTimer = 0.6;
+                showAnnounce("TOPU KAPTIN!");
+                if (isOnlineGame && conn && conn.open) {
+                    conn.send({ type: 'STEAL', newPossession: ballPossession });
+                }
+            }
+        }
+
+        function onMouseMove(e) {
+            if (!isPointerLocked) return;
+            yaw -= e.movementX * mouseSens;
+            pitch -= e.movementY * mouseSens;
+            pitch = Math.max(-Math.PI/10, Math.min(Math.PI/3.2, pitch));
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        let networkTick = 0;
+        function updateGame(dt) {
+            if (immunityTimer > 0) immunityTimer -= dt;
+            if (goalScoredCooldown > 0) goalScoredCooldown -= dt;
+
+            updateLocalPlayer(dt);
+            
+            if (isOnlineGame && conn && conn.open) {
+                networkTick += dt;
+                if (networkTick >= 0.03) {
+                    networkTick = 0;
+                    conn.send({ type: 'PLAYER_SYNC', pos: localEntity.pos, yaw: yaw });
+                    if (isHost) {
+                        conn.send({ type: 'BALL_SYNC', ballPos: ball.pos, ballVel: ball.vel, possession: ballPossession, score: score });
+                    }
+                }
+            }
+
+            updateBall(dt);
+            updateCamera();
+            updateShotBar(dt);
+
+            if (isHost && goalScoredCooldown <= 0) {
+                checkScoring();
+            }
+        }
+
+        function updateLocalPlayer(dt) {
+            const moveDir = new THREE.Vector3();
+            if (keys['KeyW']) moveDir.z -= 1;
+            if (keys['KeyS']) moveDir.z += 1;
+            if (keys['KeyA']) moveDir.x -= 1;
+            if (keys['KeyD']) moveDir.x += 1;
+            moveDir.normalize();
+
+            let currentSpeed = localEntity.speed;
+            if (keys['ShiftLeft'] || keys['ShiftRight']) {
+                currentSpeed *= localEntity.sprintMultiplier; // Çalım / Turbo hızı
+            }
+
+            const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+            const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+
+            const moveVector = new THREE.Vector3();
+            moveVector.addScaledVector(forward, -moveDir.z);
+            moveVector.addScaledVector(right, moveDir.x);
+            moveVector.normalize();
+
+            localEntity.pos.addScaledVector(moveVector, currentSpeed * dt);
+            localEntity.pos.x = THREE.MathUtils.clamp(localEntity.pos.x, -courtWidth + PLAYER_RADIUS, courtWidth - PLAYER_RADIUS);
+            localEntity.pos.z = THREE.MathUtils.clamp(localEntity.pos.z, -courtLength + PLAYER_RADIUS, courtLength - PLAYER_RADIUS);
+
+            localEntity.mesh.position.copy(localEntity.pos);
+            localEntity.mesh.rotation.y = yaw;
+        }
+
+        function updateBall(dt) {
+            if (ballPossession === 'blue') {
+                ball.dribbleTimer += dt * 14;
+                ball.pos.set(bluePlayer.pos.x, BALL_RADIUS + Math.abs(Math.sin(ball.dribbleTimer)) * 0.8, bluePlayer.pos.z + 0.5);
+                ball.vel.set(0, 0, 0);
+            } else if (ballPossession === 'red') {
+                ball.dribbleTimer += dt * 12;
+                ball.pos.set(redPlayer.pos.x, BALL_RADIUS + Math.abs(Math.sin(ball.dribbleTimer)) * 0.8, redPlayer.pos.z - 0.5);
+                ball.vel.set(0, 0, 0);
+            } else {
+                ball.vel.y += GRAVITY * dt;
+                ball.pos.addScaledVector(ball.vel, dt);
+                if (ball.pos.y <= BALL_RADIUS) {
+                    ball.pos.y = BALL_RADIUS;
+                    ball.vel.y = -ball.vel.y * 0.65;
+                }
+                if (ball.pos.y < 1.6 && immunityTimer <= 0 && isHost) {
+                    if (bluePlayer.pos.distanceTo(ball.pos) < 2.0) {
+                        ballPossession = 'blue';
+                        immunityTimer = 0.3;
+                    } else if (redPlayer.pos.distanceTo(ball.pos) < 2.0) {
+                        ballPossession = 'red';
+                        immunityTimer = 0.3;
+                    }
+                }
+            }
+            ball.mesh.position.copy(ball.pos);
+        }
+
+        function updateCamera() {
+            const camDistance = 4.8, camHeight = 2.4;
+            const offsetX = Math.sin(yaw) * Math.cos(pitch) * camDistance;
+            const offsetY = Math.sin(pitch) * camDistance + camHeight;
+            const offsetZ = Math.cos(yaw) * Math.cos(pitch) * camDistance;
+
+            camera.position.set(localEntity.pos.x + offsetX, Math.max(0.4, localEntity.pos.y + offsetY), localEntity.pos.z + offsetZ);
+            camera.lookAt(new THREE.Vector3(localEntity.pos.x, localEntity.pos.y + 1.2, localEntity.pos.z));
+        }
+
+        function updateShotBar(dt) {
+            if (!isChargingShot) return;
+            shotPower += dt * 1.85 * shotPowerDir;
+            if (shotPower >= 1 || shotPower <= 0) shotPowerDir *= -1;
+            document.getElementById('shot-bar-fill').style.width = (shotPower * 100) + '%';
+        }
+
+        function releaseShot() {
+            if (!isChargingShot) return;
+            isChargingShot = false;
+            document.getElementById('shot-bar-wrapper').style.display = 'none';
+
+            let hasBall = isHost ? (ballPossession === 'blue') : (ballPossession === 'red');
+            if (!hasBall) return;
+
+            ballPossession = 'none';
+            immunityTimer = 0.3;
+
+            let target = isHost ? RED_RIM_POS.clone() : HOOP_BLUE_POS.clone();
+            const dist = ball.pos.distanceTo(target);
+            const timeToTarget = dist / (9.5 + shotPower * 9.5);
+
+            ball.vel.x = (target.x - ball.pos.x) / timeToTarget;
+            ball.vel.z = (target.z - ball.pos.z) / timeToTarget;
+            ball.vel.y = (target.y - ball.pos.y) / timeToTarget - 0.5 * GRAVITY * timeToTarget;
+
+            if (isOnlineGame && conn && conn.open) {
+                conn.send({ type: 'SHOOT', vel: ball.vel });
+            }
+        }
+
+        function checkScoring() {
+            if (Math.hypot(ball.pos.x - RED_RIM_POS.x, ball.pos.z - RED_RIM_POS.z) < HOOP_RADIUS && ball.pos.y <= RED_RIM_POS.y && ball.vel.y < 0) {
+                goalScoredCooldown = 2.5;
+                score.blue += 2;
+                showAnnounce("MAVİ SAYI ATTI! +2");
+                updateScoreUI();
+                setTimeout(() => { resetPositions('red'); }, 1400);
+            }
+            if (Math.hypot(ball.pos.x - HOOP_BLUE_POS.x, ball.pos.z - HOOP_BLUE_POS.z) < HOOP_RADIUS && ball.pos.y <= HOOP_BLUE_POS.y && ball.vel.y < 0) {
+                goalScoredCooldown = 2.5;
+                score.red += 2;
+                showAnnounce("KIRMIZI SAYI ATTI! +2");
+                updateScoreUI();
+                setTimeout(() => { resetPositions('blue'); }, 1400);
+            }
+        }
+
+        function updateScoreUI() {
+            let blueName = isHost ? myNickname : peerNickname;
+            let redName = isHost ? peerNickname : myNickname;
+            document.getElementById('blue-score-text').innerText = `${blueName} (Mavi) ${score.blue}`;
+            document.getElementById('red-score-text').innerText = `${score.red} ${redName} (Kırmızı)`;
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
